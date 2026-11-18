@@ -104,3 +104,9 @@ node tests/ui_logic_test.js
 ```
 
 The Python suite uses isolated data and exercises a real MCP subprocess. Neural retrieval tests run with a cached model. Set `RUN_NEURAL_TESTS=1` to enable the download during testing. The live-provider smoke check is `python scripts/check_llm.py`.
+
+## Project team
+
+- [@sheralisaleem](https://github.com/sheralisaleem/)
+- [@SyedRazaZaidi](https://github.com/SyedRazaZaidi)
+- [@kheshamsyed05](https://github.com/kheshamsyed05)
