@@ -1,0 +1,8 @@
+{% extends 'base.html' %}
+{% from 'macros.html' import heading %}
+{% block content %}
+<section class="container narrow page">
+  {{ heading(title, message) }}
+  <a class="button primary" href="/">Back to home</a>
+</section>
+{% endblock %}

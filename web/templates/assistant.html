@@ -1,0 +1,51 @@
+{% extends 'base.html' %}
+{% from 'macros.html' import icon %}
+{% block page_head %}<link rel="stylesheet" href="/static/agents.css">{% endblock %}
+{% block content %}
+<section class="container page assistant-page" data-workflow="assistant">
+  <header class="page-heading split-heading">
+    <div><h1>Appointment assistant</h1><p>Find a time, manage a visit, or ask about clinic policies.</p></div>
+    <button class="button secondary-button" id="new-session" type="button">{{ icon('chat') }} New conversation</button>
+  </header>
+
+  <div class="run-banner" id="current-run" data-state="idle">
+    <span class="icon-box" aria-hidden="true">{{ icon('activity') }}</span>
+    <div role="status" aria-live="polite" aria-atomic="true">
+      <strong id="current-run-title">Connecting to the clinic</strong>
+      <span id="current-run-description"></span>
+    </div>
+    <button type="button" class="button secondary-button compact" id="inspect-working-agent" hidden>View agent {{ icon('arrow') }}</button>
+  </div>
+
+  <div class="workspace-grid assistant-grid">
+    <section class="chat-panel" aria-label="Conversation">
+      <div class="chat-panel-heading">{{ icon('chat') }}<h2>Conversation</h2></div>
+      <div id="chat-log" class="chat-log" role="log" aria-live="polite">
+        <div id="chat-intro">
+          <h3>How can we help?</h3>
+          <div class="suggestions">
+            <button type="button" class="button secondary-button" data-suggest="Find a General Medicine appointment this week">Find an appointment</button>
+            <button type="button" class="button secondary-button" data-suggest="Show my current appointments">Check my appointments</button>
+            <button type="button" class="button secondary-button" data-suggest="What is the clinic's cancellation policy?">Cancellation policy</button>
+          </div>
+        </div>
+      </div>
+      <div data-choices hidden></div>
+      <p data-workflow-status class="notice compact-notice" role="status" hidden></p>
+      <form id="chat-form" class="composer"><label for="message">Message</label><div>
+        <textarea id="message" name="message" rows="2" maxlength="2000" enterkeyhint="send" placeholder="Ask about appointments or clinic policies" required></textarea>
+        <button class="button primary" type="submit">Send {{ icon('arrow') }}</button>
+      </div></form>
+    </section>
+
+    <aside class="activity-panel" aria-label="Agent activity">
+      <div class="section-header"><h2>Agent activity</h2><a class="text-link" href="/agents">View roster</a></div>
+      <p class="secondary" id="activity-empty">Send a message to see the agents work through your request.</p>
+      <div id="assistant-handoff" class="assistant-handoff" hidden>{{ icon('exchange') }}<p></p></div>
+      <ol id="activity" class="request-stages" aria-label="Steps in the current request"></ol>
+      <details class="trace-details"><summary>Technical details</summary><div id="technical-trace" class="technical-list"></div></details>
+    </aside>
+  </div>
+</section>
+{% include 'agent_inspector.html' %}
+{% endblock %}

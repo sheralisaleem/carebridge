@@ -1,0 +1,24 @@
+{% extends 'base.html' %}
+{% from 'macros.html' import heading, icon %}
+{% block content %}
+<section class="container page">
+  {{ heading('Doctors', 'Browse the clinic directory and check a doctor’s available appointments.') }}
+  <div class="filter-bar" data-directory>
+    <label>Department<select id="department-filter"><option value="">All departments</option>{% for department in departments %}<option>{{ department }}</option>{% endfor %}</select></label>
+    <label>Search<input id="doctor-filter" type="search" placeholder="Search doctors by name"></label>
+  </div>
+  <div class="directory" id="doctor-directory">
+  {% for doctor in doctors %}
+  <article class="directory-row" data-name="{{ doctor.name|lower }}" data-department="{{ doctor.department }}">
+    <div class="icon-box">{{ icon('doctor') }}</div>
+    <div class="visit-main"><h2>{{ doctor.name }}</h2><span>{{ doctor.department }}</span>
+      {% if doctor.languages %}<span class="secondary">{{ doctor.languages }}{% if doctor.telehealth_available %} · Telehealth{% endif %}</span>{% endif %}
+      {% if doctor.requires_gp_referral %}<span class="secondary">GP referral required</span>{% endif %}
+    </div>
+    <a class="button secondary-button" href="/book?doctor_id={{ doctor.doctor_id|urlencode }}">View availability {{ icon('arrow') }}</a>
+  </article>
+  {% endfor %}
+  </div>
+  <p id="no-doctors" class="empty-state" hidden>No doctors match those filters.</p>
+</section>
+{% endblock %}

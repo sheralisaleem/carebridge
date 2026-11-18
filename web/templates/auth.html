@@ -1,0 +1,45 @@
+{% extends 'base.html' %}
+{% from 'macros.html' import icon, csrf_field with context %}
+{% block content %}
+<section class="container auth-layout">
+  <aside class="auth-aside">
+    <img src="/static/clinic-reception.png" alt="" width="1448" height="1086">
+    <div><span class="eyebrow">CareBridge Family Clinic</span><p>Manage visits and preferences from your clinic account.</p></div>
+  </aside>
+  <div class="auth-card">
+    {% if mode == 'forgot' %}<div class="icon-box">{{ icon('mail') }}</div>{% endif %}
+    <h1>{{ title }}</h1>
+    {% if mode == 'signin' %}<p class="secondary">Access your clinic account.</p>{% endif %}
+    {% if error %}<p class="notice error" role="alert">{{ error }}</p>{% endif %}
+    {% if notice %}<p class="notice" role="status">{{ notice }}</p>{% endif %}
+    {% if mode == 'updated' %}
+      <p>You can now sign in with your new password.</p>
+      <a class="button primary" href="/sign-in">Sign in</a>
+    {% else %}
+    <form class="form-stack" method="post" action="{{ path }}">
+      {{ csrf_field() }}
+      <input type="hidden" name="next" value="{{ next_url }}">
+      {% if mode == 'reset' %}<input type="hidden" name="token" value="{{ token }}">{% endif %}
+      {% if mode in ['signup', 'doctor_signup'] %}<label>Full name<input name="name" required maxlength="100" autocomplete="name" value="{{ name }}"></label>{% endif %}
+      {% if mode != 'reset' %}<label>Email<input name="email" type="email" required maxlength="254" autocomplete="email" value="{{ email }}"></label>{% endif %}
+      {% if mode == 'doctor_signup' %}
+        <label>Department<select name="department" required><option value="">Select a department</option>{% for item in departments %}<option{% if department == item %} selected{% endif %}>{{ item }}</option>{% endfor %}</select></label>
+      {% endif %}
+      {% if mode != 'forgot' %}
+        <label>{{ 'New password' if mode == 'reset' else 'Password' }}<input type="password" name="password" autocomplete="{{ 'current-password' if mode == 'signin' else 'new-password' }}" required maxlength="256"{% if mode != 'signin' %} minlength="12" aria-describedby="password-hint"{% endif %}></label>
+        {% if mode != 'signin' %}<small id="password-hint">Use at least 12 characters.</small>{% else %}<a class="text-link" href="/forgot-password">Forgot password?</a>{% endif %}
+      {% elif demo_mail and notice %}
+        <p class="secondary">Local password-reset emails are saved in the clinic’s <code>mailbox/</code> folder.</p>
+      {% endif %}
+      <button class="button primary full">{{ {'signin':'Sign in', 'signup':'Create account', 'doctor_signup':'Create doctor account', 'forgot':'Send reset link', 'reset':'Save password'}[mode] }}</button>
+    </form>
+    <div class="auth-links">
+      {% if mode == 'signin' %}
+        <a href="/sign-up{% if next_url %}?next={{ next_url|urlencode }}{% endif %}">Create a patient account</a>
+        {% if doctor_signup %}<a href="/doctor/sign-up">Create a doctor account</a>{% endif %}
+      {% else %}<a href="/sign-in{% if next_url %}?next={{ next_url|urlencode }}{% endif %}">Back to sign in</a>{% endif %}
+    </div>
+    {% endif %}
+  </div>
+</section>
+{% endblock %}

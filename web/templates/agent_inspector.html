@@ -1,0 +1,28 @@
+<div id="agent-catalog" hidden data-catalog="{{ catalog|tojson|forceescape }}"></div>
+<dialog class="agent-dialog" id="agent-dialog" aria-labelledby="agent-dialog-title">
+  <div class="inspector-top">
+    <span id="inspector-icon" class="icon-box" aria-hidden="true"></span>
+    <div class="inspector-heading"><p id="inspector-category"></p><h2 id="agent-dialog-title"></h2></div>
+    <button class="icon-button" type="button" id="close-agent-dialog" aria-label="Close agent details">
+      {{ icon('close') }}
+    </button>
+  </div>
+  <div class="inspector-body">
+    <p id="inspector-description"></p>
+    <section id="inspector-agent" hidden>
+      <dl class="inspector-stats" id="inspector-stats"></dl>
+      <p id="inspector-latest" hidden><strong>Latest activity</strong><span></span></p>
+      <div class="source-heading">
+        <div><h3>Source code</h3><code id="inspector-path"></code></div>
+        <button class="button secondary-button compact" id="copy-agent-path" type="button">Copy path</button>
+      </div>
+      <div class="source-preview">
+        <p id="inspector-symbol"></p>
+        <pre><code id="inspector-code"></code></pre>
+      </div>
+      <p id="copy-agent-status" class="secondary copy-feedback" role="status"></p>
+    </section>
+    <section id="inspector-breakdown" hidden><ul class="metric-breakdown" id="metric-breakdown"></ul></section>
+    <button class="link-button" id="back-to-metric" type="button" hidden>Back to metric</button>
+  </div>
+</dialog>

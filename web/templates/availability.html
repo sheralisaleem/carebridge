@@ -1,0 +1,48 @@
+{% extends 'base.html' %}
+{% from 'macros.html' import heading, icon, csrf_field with context %}
+{% macro window(row=none) %}
+<div class="hour-row">
+  <label>Day<select name="weekday" aria-label="Day" required>{% for weekday in weekdays %}<option value="{{ loop.index0 }}"{% if row and row.weekday == loop.index0 %} selected{% endif %}>{{ weekday }}</option>{% endfor %}</select></label>
+  <label>Start<input name="start" type="time" step="1800" value="{{ row.start_time if row else '09:00' }}" required></label>
+  <label>End<input name="end" type="time" step="1800" value="{{ row.end_time if row else '12:00' }}" required></label>
+  <button type="button" class="link-button danger" data-remove-window>Remove</button>
+</div>
+{% endmacro %}
+{% block content %}
+<section class="container page">
+  {{ heading('Availability', 'Publish the hours patients can book and adjust individual times on specific dates.') }}
+  {% if notice %}<p class="notice" role="status">{{ notice }}</p>{% endif %}
+  {% if error %}<p class="notice error" role="alert">{{ error }}</p>{% endif %}
+  <div class="equal-grid">
+    <section class="surface">
+      <div class="section-header"><h2>{{ icon('calendar') }} Weekly hours</h2></div>
+      <p class="secondary">Add time ranges in 30-minute increments. Confirmed appointments stay on your calendar.</p>
+      <form method="post" action="/doctor/availability" class="form-stack">
+        {{ csrf_field() }}<input type="hidden" name="date" value="{{ date }}"><input type="hidden" name="operation" value="hours">
+        <div id="hours-list">{% for row in hours %}{{ window(row) }}{% endfor %}</div>
+        <template id="hour-template">{{ window() }}</template>
+        <div class="button-row"><button type="button" class="button secondary-button" id="add-window">Add time range</button><button class="button primary">Save weekly hours</button></div>
+      </form>
+    </section>
+    <section class="surface">
+      <div class="section-header"><h2>{{ icon('clock') }} Individual slots</h2></div>
+      <form class="inline-form" method="get" action="/doctor/availability">
+        <label>Date<input type="date" name="date" value="{{ date }}" min="{{ today }}" max="{{ last_day }}" required></label><button class="button secondary-button">View date</button>
+      </form>
+      <div class="slot-list">{% for slot in slots %}
+        <div class="slot-row"><strong>{{ slot.start_time }}</strong><span class="pill {{ 'success' if slot.status == 'open' }}">{{ slot.status|capitalize }}</span>
+          {% if slot.status != 'booked' %}
+          <form method="post" action="/doctor/availability">
+            {{ csrf_field() }}<input type="hidden" name="date" value="{{ date }}"><input type="hidden" name="start_time" value="{{ slot.start_time }}">
+            <button class="link-button" name="operation" value="{{ 'block' if slot.status == 'open' else 'open' }}">{{ 'Block' if slot.status == 'open' else 'Reopen' }}</button>
+          </form>{% endif %}
+        </div>
+      {% else %}<p class="secondary">There are no slots on this date.</p>{% endfor %}</div>
+      <form class="inline-form add-slot" method="post" action="/doctor/availability">
+        {{ csrf_field() }}<input type="hidden" name="date" value="{{ date }}"><input type="hidden" name="operation" value="open">
+        <label>One-off start time<input type="time" name="start_time" step="1800" required></label><button class="button primary">Add one-off slot</button>
+      </form>
+    </section>
+  </div>
+</section>
+{% endblock %}

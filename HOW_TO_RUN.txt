@@ -1,0 +1,56 @@
+CareBridge - How to run on Windows
+==================================
+
+First launch
+------------
+1. Install Python 3.11 with the Windows Python launcher (py).
+2. Double-click start-project.bat in the CareBridge project folder.
+   If .env is missing, the launcher creates it from .env.example and pauses.
+3. Open .env in Notepad and configure your LLM provider:
+
+   Anthropic
+     LLM_PROVIDER=anthropic
+     ANTHROPIC_API_KEY=your_key
+
+   OpenAI-compatible
+     LLM_PROVIDER=openai
+     OPENAI_API_KEY=your_key
+     LLM_MODEL=your_model
+     Set OPENAI_BASE_URL if your provider requires a custom endpoint.
+
+   Keep your real keys in .env.
+4. Double-click start-project.bat again. The launcher creates .venv and
+   installs dependencies when needed.
+5. Wait for Uvicorn to say the application startup is complete, then open
+   http://127.0.0.1:8000 in your browser. Keep the console window open.
+   Press Ctrl+C in the console to stop CareBridge.
+
+Try the demo
+------------
+- Choose Sign in > Create a patient account or Create a doctor account.
+  Either account can sign in immediately after registration.
+- Sign in as a doctor to publish time slots and see upcoming appointments.
+  Use a separate browser profile to test booking from a patient account.
+  Newly registered patients start with General Medicine.
+- The first policy search may download the neural embedding model.
+  To prepare it before the demo, run this in PowerShell from the project:
+
+     .\.venv\Scripts\python.exe scripts\setup_data.py --kb-only
+
+Troubleshooting
+---------------
+- Port 8000 is busy. Open http://127.0.0.1:8000 if CareBridge is already
+  running. To use another port, run .\start-project.bat --port 8001 and
+  open http://127.0.0.1:8001. If SITE_ORIGIN is set in .env, match the port.
+- The launcher cannot use .venv. Stop CareBridge, then run these commands
+  from the project folder to rebuild the virtual environment:
+
+     py -3.11 -m venv --clear .venv
+     .\.venv\Scripts\python.exe -m pip install -r requirements.txt
+     .\start-project.bat
+
+- To check the live LLM connection, run:
+
+     .\.venv\Scripts\python.exe scripts\check_llm.py
+
+For architecture, tests, and the presentation walkthrough, see README.md.

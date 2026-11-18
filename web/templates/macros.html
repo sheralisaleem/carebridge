@@ -1,0 +1,16 @@
+{% macro icon(name, size='') %}<svg class="icon {{ size }}" aria-hidden="true"><use href="/static/icons.svg#{{ name }}"></use></svg>{% endmacro %}
+{% macro nav(href, label) %}<a href="{{ href }}"{% if path == href %} aria-current="page"{% endif %}>{{ label }}</a>{% endmacro %}
+{% macro heading(title, text='') %}<header class="page-heading"><h1>{{ title }}</h1>{% if text %}<p>{{ text }}</p>{% endif %}</header>{% endmacro %}
+{% macro csrf_field() %}<input type="hidden" name="csrf" value="{{ csrf }}">{% endmacro %}
+{% macro visit_row(visit, actions=false) %}
+<article class="visit-row" data-visit="{{ visit.appointment_id }}">
+  <div class="icon-box">{{ icon('calendar') }}</div>
+  <div class="visit-main"><strong>{{ visit.department }}</strong><span>{{ visit.doctor_name }}</span>
+    <span class="secondary"><time datetime="{{ visit.date }}T{{ visit.start_time }}">{{ visit.date }} · {{ visit.start_time }}</time> <span class="ref">{{ visit.appointment_id }}</span></span></div>
+  {% if visit.status == 'confirmed' %}<span class="pill success">Confirmed</span>{% else %}<span class="pill">{{ visit.status|replace('_', ' ')|capitalize }}</span>{% endif %}
+  {% if actions %}<div class="row-actions">
+    {% if visit.status in ['confirmed', 'cancelled_by_clinic'] %}<button class="link-button" type="button" data-action="reschedule" data-appointment="{{ visit.appointment_id }}">Reschedule</button>{% endif %}
+    {% if visit.status == 'confirmed' and visit.date >= today %}<button class="link-button danger" type="button" data-action="cancel" data-appointment="{{ visit.appointment_id }}">Cancel</button>{% endif %}
+  </div>{% endif %}
+</article>
+{% endmacro %}

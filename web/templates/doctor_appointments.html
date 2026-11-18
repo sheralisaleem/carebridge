@@ -1,0 +1,14 @@
+{% extends 'base.html' %}
+{% from 'macros.html' import heading, icon %}
+{% block content %}
+<section class="container page">
+  <header class="page-heading split-heading"><div><h1>My appointments</h1><p>Today and upcoming · {{ user.name }}</p></div><a class="button secondary-button" href="/doctor/availability">{{ icon('clock') }} Edit availability</a></header>
+  {% for day, items in visits|groupby('date') %}
+    <section class="content-section"><h2>{{ day }}</h2><div class="visit-list">
+    {% for visit in items %}<article class="visit-row"><div class="icon-box">{{ icon('calendar') }}</div>
+      <div class="visit-main"><strong>{{ visit.start_time }} · {{ visit.patient }}</strong><span class="secondary">{{ visit.appointment_id }}</span>
+      {% if visit.outside_hours %}<span class="muted-warning">Kept outside current weekly hours</span>{% endif %}</div><span class="pill success">Confirmed</span></article>{% endfor %}
+    </div></section>
+  {% else %}<p class="empty-state">You have no upcoming appointments. Published times will appear in patient booking searches.</p>{% endfor %}
+</section>
+{% endblock %}

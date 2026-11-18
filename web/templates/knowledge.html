@@ -1,0 +1,15 @@
+{% extends 'base.html' %}
+{% from 'macros.html' import heading, icon %}
+{% block content %}
+<section class="container page">
+  {{ heading('Knowledge', 'Search the policy documents the Policy Librarian uses to answer clinic questions.') }}
+  <div class="workspace-grid">
+    <section class="surface">
+      <form class="inline-form search-form" id="knowledge-search"><label>Search clinic policies<input name="query" type="search" maxlength="400" placeholder="For example, late cancellation" required></label><button class="button primary">Search</button></form>
+      <div id="policy-results" class="policy-results" aria-live="polite"></div>
+    </section>
+    <aside class="soft-card"><div class="icon-box">{{ icon('book') }}</div><h2>Clinic documents</h2><p>Evidence threshold <strong>{{ threshold }}</strong></p>
+      <ul class="document-list">{% for doc in docs %}<li>{{ doc.title }}</li>{% endfor %}</ul></aside>
+  </div>
+</section>
+{% endblock %}

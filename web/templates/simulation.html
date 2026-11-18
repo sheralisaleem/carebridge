@@ -1,0 +1,22 @@
+{% extends 'base.html' %}
+{% from 'macros.html' import heading, icon %}
+{% block content %}
+<section class="container page">
+  {{ heading('Simulation', 'See how agents respond when synthetic patients compete or the clinic schedule changes.') }}
+  {% if enabled %}
+  <div class="workspace-grid">
+    <section class="surface">
+      <h2>Run a clinic simulation</h2><p>Changes affect availability in the shared clinic schedule.</p>
+      <form class="inline-form" id="simulation-form"><label>Ticks<input name="ticks" type="number" value="8" min="1" max="40" required></label>
+      <label>Synthetic patients<input name="patients" type="number" value="6" min="2" max="20" required></label><button class="button primary">Run simulation</button></form>
+      <p id="simulation-status" class="notice" role="status" hidden></p><ol id="simulation-log" class="event-list"></ol>
+    </section>
+    <aside class="soft-card"><div class="icon-box">{{ icon('flow') }}</div><h2>Change events</h2>
+      <p>Trigger a conflict on your next booking or simulate leave for the doctor of your latest confirmed visit.</p>
+      <div class="button-stack"><button type="button" class="button secondary-button" data-simulation="race">Simulate slot conflict</button>
+      <button type="button" class="button secondary-button" data-simulation="doctor_leave">Simulate doctor leave</button></div>
+    </aside>
+  </div>
+  {% else %}<p class="empty-state">Simulation controls are unavailable for this account or clinic configuration.</p>{% endif %}
+</section>
+{% endblock %}

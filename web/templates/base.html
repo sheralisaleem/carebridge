@@ -1,0 +1,50 @@
+{% from 'macros.html' import icon, nav, csrf_field with context %}
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f5f8f8">
+  <meta name="csrf-token" content="{{ csrf }}">
+  <title>{{ title }} · CareBridge</title>
+  <link rel="stylesheet" href="/static/site.css">
+  {% block page_head %}{% endblock %}
+  <script type="module" src="/static/site.js"></script>
+</head>
+<body{% if user %} data-account="{{ user.id }}"{% endif %} data-page="{{ path }}">
+  <a class="skip-link" href="#main">Skip to content</a>
+  <header class="site-header{% if user %} signed-in{% endif %}">
+    <div class="container masthead">
+      <a class="brand" href="/" aria-label="CareBridge home">{{ icon('brand') }}<span>CareBridge</span></a>
+      <nav class="primary-nav" aria-label="Main navigation">
+      {% if user and user.role == 'doctor' %}
+        {{ nav('/doctor/appointments', 'My appointments') }} {{ nav('/doctor/availability', 'Availability') }} {{ nav('/agents', 'Agents') }}
+      {% elif user %}
+        {{ nav('/dashboard', 'Dashboard') }} {{ nav('/appointments', 'Appointments') }}
+        {{ nav('/assistant', 'Assistant') }} {{ nav('/agents', 'Agents') }} {{ nav('/simulation', 'Simulation') }}
+      {% else %}
+        {{ nav('/doctors', 'Doctors') }} {{ nav('/clinic', 'Clinic information') }}
+      {% endif %}
+      </nav>
+      <div class="masthead-actions">
+      {% if user %}<a class="account-link" href="/account">{{ icon('person') }}<span>Account</span></a>
+      {% else %}<a href="/sign-in" class="quiet">Sign in</a><a class="button primary compact" href="/book">Book a visit {{ icon('arrow') }}</a>{% endif %}
+      </div>
+    </div>
+  </header>
+  <main id="main" tabindex="-1">{% block content %}{% endblock %}</main>
+  <footer class="site-footer">
+    <div class="container footer-layout">
+      <div><a class="brand footer-brand" href="/">{{ icon('brand') }} CareBridge</a><p>Simulated clinic · Agent Based Modeling project</p></div>
+      <nav aria-label="Footer navigation">{{ nav('/doctors', 'Doctors') }} {{ nav('/clinic', 'Clinic information') }}{% if user %}{{ nav('/knowledge', 'Knowledge') }}{% endif %}</nav>
+    </div>
+  </footer>
+  <dialog class="confirm-dialog" id="confirm-dialog" aria-labelledby="confirm-title">
+    <div class="icon-box">{{ icon('shield') }}</div>
+    <h2 id="confirm-title">Review this appointment change</h2>
+    <p id="confirm-detail"></p>
+    <p class="secondary">Confirm to apply this change to the clinic schedule.</p>
+    <div class="button-row right"><button class="button secondary-button" id="decline" type="button">Decline</button><button class="button primary" id="approve" type="button">Confirm change</button></div>
+  </dialog>
+</body>
+</html>

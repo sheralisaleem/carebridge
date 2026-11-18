@@ -1,0 +1,69 @@
+{% extends 'base.html' %}
+{% from 'macros.html' import icon %}
+{% block page_head %}<link rel="stylesheet" href="/static/agents.css">{% endblock %}
+{% block content %}
+<section class="container page agents-page" id="agents-page" data-overview="{{ overview|tojson|forceescape }}">
+  <header class="page-heading split-heading">
+    <div><h1>Agents</h1><p>See who handled each task and open the code behind each agent.</p></div>
+    <a class="button secondary-button" href="/knowledge">{{ icon('book') }} Knowledge</a>
+  </header>
+  <div class="metric-grid" aria-label="Clinic activity metrics">
+    <button type="button" class="metric-card" data-metric-open="agents"><span class="metric-title">{{ icon('flow') }} Agents</span><strong data-total="agents">{{ overview.agents|length }}</strong><span class="metric-link">View roster {{ icon('arrow') }}</span></button>
+    <button type="button" class="metric-card" data-metric-open="actions"><span class="metric-title">{{ icon('activity') }} Actions recorded</span><strong data-total="actions">0</strong><span class="metric-link">View by agent {{ icon('arrow') }}</span></button>
+    <button type="button" class="metric-card" data-metric-open="messages"><span class="metric-title">{{ icon('exchange') }} Messages sent</span><strong data-total="messages">{{ overview.messages }}</strong><span class="metric-link">View by agent {{ icon('arrow') }}</span></button>
+    <button type="button" class="metric-card" data-metric-open="replans"><span class="metric-title">{{ icon('repeat') }} Replans</span><strong data-total="replans">{{ overview.replans }}</strong><span class="metric-link">View replans {{ icon('arrow') }}</span></button>
+  </div>
+  <p class="metrics-scope">Counts include the shared clinic simulation and recent browser activity for your account.</p>
+
+  <div class="agent-dashboard-grid">
+    <section aria-labelledby="roster-heading" class="roster-section">
+      <div class="section-header roster-header"><h2 id="roster-heading">Agent roster</h2>
+        <div class="roster-filters" role="group" aria-label="Filter agents">
+          <button type="button" data-role-filter="all" aria-pressed="true">All</button>
+          <button type="button" data-role-filter="core" aria-pressed="false">Core team</button>
+          <button type="button" data-role-filter="doctor" aria-pressed="false">Doctors</button>
+          <button type="button" data-role-filter="patient" aria-pressed="false">Patients</button>
+        </div>
+      </div>
+      <div class="agent-grid" id="agent-roster"></div>
+      <p id="roster-empty" class="empty-state" hidden>No agents in this group yet.</p>
+      <template id="agent-card-template">
+        <article class="agent-card">
+          <button type="button" class="agent-card-open">
+            <span class="icon-box agent-card-icon" aria-hidden="true"></span>
+            <span class="agent-card-name"><strong></strong><span data-agent-role-label></span></span>
+            <span class="agent-card-arrow" aria-hidden="true">{{ icon('arrow') }}</span>
+          </button>
+          <p data-agent-summary></p>
+          <div class="agent-card-status" data-agent-state>
+            <i class="status-dot" aria-hidden="true"></i><span data-agent-status></span>
+          </div>
+          <div class="agent-card-metrics">
+            <button type="button" data-agent-metric="actions"><strong></strong><span>Actions</span></button>
+            <button type="button" data-agent-metric="messages"><strong></strong><span>Messages</span></button>
+          </div>
+        </article>
+      </template>
+    </section>
+
+    <aside class="agent-feed" aria-label="Clinic activity">
+      <section class="surface flow-surface" aria-labelledby="flow-title">
+        <h2 id="flow-title">Agent handoffs</h2>
+        <p id="flow-label" class="secondary">Waiting for a request</p>
+        <div class="flow-map" aria-hidden="true">
+          <svg viewBox="0 0 100 24" class="flow-lines" preserveAspectRatio="none">
+            <path d="M12 12H88"/><path class="flow-travel" d="M12 12H88" pathLength="100"/>
+          </svg>
+          <span class="flow-node" id="flow-from">Sender</span><span class="flow-node" id="flow-to">Recipient</span>
+        </div>
+        <p id="agent-feed-empty" class="secondary">Open the Assistant and send a request to follow the handoffs here.</p>
+        <ol id="agent-page-activity" class="activity-list" aria-label="Recent agent activity"></ol>
+      </section>
+      <section class="surface shared-activity" id="shared-agent-activity" hidden>
+        <h2>Shared clinic activity</h2><ul class="event-list" id="shared-agent-log"></ul>
+      </section>
+    </aside>
+  </div>
+</section>
+{% include 'agent_inspector.html' %}
+{% endblock %}

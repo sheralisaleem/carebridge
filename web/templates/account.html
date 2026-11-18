@@ -1,0 +1,15 @@
+{% extends 'base.html' %}
+{% from 'macros.html' import heading, icon, csrf_field with context %}
+{% block content %}
+<section class="container page narrow-wide">
+  {{ heading('Account') }}
+  {% if error %}<p class="notice error" role="alert">{{ error }}</p>{% endif %}
+  <section class="surface profile"><div class="icon-box">{{ icon('person') }}</div><div><h2>{{ user.name }}</h2><p>{{ user.email }} · {{ user.role|capitalize }}</p></div></section>
+  {% if user.role == 'patient' %}<section class="surface content-section"><h2>Saved preferences</h2>
+    {% for fact in preferences %}<div class="preference"><div><strong>{{ fact.key|replace('_', ' ')|capitalize }}</strong><span>{{ fact.value }}</span></div>
+      <form method="post" action="/account">{{ csrf_field() }}<input type="hidden" name="key" value="{{ fact.key }}"><button class="link-button danger">Remove</button></form></div>
+    {% else %}<p class="secondary">You have no saved preferences.</p>{% endfor %}
+  </section>{% endif %}
+  <form method="post" action="/sign-out" class="content-section" id="logout-form">{{ csrf_field() }}<button class="button secondary-button">Sign out</button></form>
+</section>
+{% endblock %}

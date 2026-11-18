@@ -1,0 +1,33 @@
+{% extends 'base.html' %}
+{% from 'macros.html' import heading, icon %}
+{% block content %}
+<section class="container page" data-workflow="book">
+  {{ heading('Book a visit', 'Choose a department and a date to see available times.') }}
+  <ol class="steps" aria-label="Booking progress"><li class="active" aria-current="step">Visit details</li><li>Choose a time</li><li>Review</li></ol>
+  <div class="workspace-grid">
+    <div>
+      <form class="form-stack surface" id="booking-form">
+        <label>Department<select name="department" id="booking-department" required>
+          <option value="">Select a department</option>{% for department in departments %}
+          {% if not new_patient or department == 'General Medicine' %}<option{% if selection.department == department or new_patient %} selected{% endif %}>{{ department }}</option>{% endif %}
+          {% endfor %}
+        </select></label>
+        <label>Doctor <span class="secondary">(optional)</span><select name="doctor_id" id="booking-doctor"><option value="">Any doctor</option>
+          {% for doctor in doctors %}{% if not new_patient or doctor.department == 'General Medicine' %}
+          <option value="{{ doctor.doctor_id }}" data-department="{{ doctor.department }}"{% if doctor.doctor_id == selection.doctor_id %} selected{% endif %}>{{ doctor.name }}</option>
+          {% endif %}{% endfor %}</select></label>
+        <label>Preferred date<input type="date" name="date" min="{{ today }}" max="{{ last_day }}" value="{{ selection.date }}"></label>
+        <button class="button primary" type="submit">{{ icon('calendar') }} Find available times</button>
+      </form>
+      <p data-workflow-status class="notice" role="status" hidden></p>
+      <div data-choices hidden></div>
+    </div>
+    <aside class="soft-card">
+      <svg class="calendar-art" viewBox="0 0 108 88" aria-hidden="true"><rect x="16" y="13" width="76" height="66" rx="12"/><path d="M16 32h76M34 7v13m40-13v13"/><path class="calendar-mark" d="M61 56l7 7 13-15"/><path d="M31 45h8m6 0h8m-22 13h8m6 0h8m-22 13h8"/></svg>
+      <h2>{{ 'Your first visit' if new_patient else 'Need help choosing?' }}</h2>
+      <p>{{ 'New patients start with General Medicine.' if new_patient else 'The appointment assistant can help you search by time of day or find a specific doctor.' }}</p>
+      <a class="text-link" href="{{ '/clinic' if new_patient else '/assistant' }}">{{ 'First visit information' if new_patient else 'Open the assistant' }}</a>
+    </aside>
+  </div>
+</section>
+{% endblock %}
