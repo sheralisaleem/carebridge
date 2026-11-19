@@ -24,11 +24,6 @@ export function dashboardSnapshot(overview, events) {
       for (const id of new Set([event.from, event.to])) {
         if (rows.has(id)) rows.get(id).messages += 1;
       }
-      const patient = rows.get(event.from);
-      if (patient?.role === 'patient' && event.performative === 'QUERY') {
-        patient.actions += 1;
-        patient.last = 'Sent a request for screening';
-      }
     } else if (event.kind === 'replan') {
       replans += 1;
     } else if (event.kind === 'activity_end') {

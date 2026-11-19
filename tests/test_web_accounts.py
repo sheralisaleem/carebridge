@@ -32,15 +32,14 @@ class AccountWebTests(unittest.TestCase):
         return self.client.post(path, data={"csrf": self.client.cookies["cb_csrf"], **values},
                                 headers={"Origin": self.origin}, follow_redirects=False)
 
-    def test_agent_overview_is_scoped_and_inspector_includes_real_source(self):
+    def test_agent_overview_lists_workflow_agents_with_real_source(self):
         self.assertEqual(self.client.get("/api/agents/overview").status_code, 401)
         self.accounts.attach_fixture("patient", "P1001", "sara@example.test", "valid-password")
         self.client.get("/sign-in")
         self.post("/sign-in", {"email": "sara@example.test", "password": "valid-password"})
         overview = self.client.get("/api/agents/overview").json()
-        names = {agent["name"] for agent in overview["agents"]}
-        self.assertIn("Sara Ahmed", names)
-        self.assertNotIn("Omar Siddiqui", names)
+        self.assertCountEqual((agent["role"] for agent in overview["agents"]),
+                              ["coordinator", "safety", "scheduler", "receptionist", "policy", "memory"])
         self.assertTrue(all("beliefs" not in item for item in overview["agents"]))
         for path in ("/agents", "/assistant"):
             page = self.client.get(path)
@@ -48,6 +47,8 @@ class AccountWebTests(unittest.TestCase):
             self.assertIn('id="agent-dialog"', page.text)
             self.assertIn("clinic_agent/agents/front_desk.py", page.text)
             self.assertIn("context.waiting(", page.text)
+            self.assertNotIn("clinic_agent/agents/doctor.py", page.text)
+            self.assertNotIn("clinic_agent/agents/patient.py", page.text)
 
     def test_password_signup_preserves_booking_return_and_sends_no_email(self):
         self.client.get("/sign-up")

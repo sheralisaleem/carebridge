@@ -17,21 +17,14 @@
 
   <div class="agent-dashboard-grid">
     <section aria-labelledby="roster-heading" class="roster-section">
-      <div class="section-header roster-header"><h2 id="roster-heading">Agent roster</h2>
-        <div class="roster-filters" role="group" aria-label="Filter agents">
-          <button type="button" data-role-filter="all" aria-pressed="true">All</button>
-          <button type="button" data-role-filter="core" aria-pressed="false">Core team</button>
-          <button type="button" data-role-filter="doctor" aria-pressed="false">Doctors</button>
-          <button type="button" data-role-filter="patient" aria-pressed="false">Patients</button>
-        </div>
-      </div>
+      <h2 id="roster-heading" class="roster-header">Agent roster</h2>
       <div class="agent-grid" id="agent-roster"></div>
-      <p id="roster-empty" class="empty-state" hidden>No agents in this group yet.</p>
+      <p id="roster-empty" class="empty-state" hidden>No agents are available.</p>
       <template id="agent-card-template">
         <article class="agent-card">
           <button type="button" class="agent-card-open">
             <span class="icon-box agent-card-icon" aria-hidden="true"></span>
-            <span class="agent-card-name"><strong></strong><span data-agent-role-label></span></span>
+            <span class="agent-card-name"><strong></strong></span>
             <span class="agent-card-arrow" aria-hidden="true">{{ icon('arrow') }}</span>
           </button>
           <p data-agent-summary></p>
@@ -58,9 +51,6 @@
         </div>
         <p id="agent-feed-empty" class="secondary">Open the Assistant and send a request to follow the handoffs here.</p>
         <ol id="agent-page-activity" class="activity-list" aria-label="Recent agent activity"></ol>
-      </section>
-      <section class="surface shared-activity" id="shared-agent-activity" hidden>
-        <h2>Shared clinic activity</h2><ul class="event-list" id="shared-agent-log"></ul>
       </section>
     </aside>
   </div>

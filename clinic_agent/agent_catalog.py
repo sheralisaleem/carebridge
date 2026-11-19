@@ -5,10 +5,8 @@ from pathlib import Path
 from textwrap import dedent
 
 from .agents.coordinator import ClinicAgent
-from .agents.doctor import DoctorAgent
 from .agents.front_desk import ReceptionistAgent
 from .agents.memory_keeper import MemoryKeeperAgent
-from .agents.patient import PatientAgent
 from .agents.policy import PolicyAgent
 from .agents.safety_officer import SafetyOfficerAgent
 from .agents.scheduler import SchedulerAgent
@@ -45,16 +43,6 @@ ROLES = {
         "Stores scheduling preferences in SQLite for the signed-in patient. The Scheduler can apply them in later conversations. Patients can remove their saved preferences.",
         MemoryKeeperAgent.save, None,
     ),
-    "doctor": (
-        "Doctor Agent", "doctor", "Publish changes to availability",
-        "Represents one clinician. The agent informs the Scheduler after that doctor saves available hours, and informs Front Desk when the clinic simulates leave.",
-        DoctorAgent.availability_changed, None,
-    ),
-    "patient": (
-        "Patient Agent", "person", "Make an appointment request",
-        "Represents a patient's request. During simulation, synthetic Patient Agents request slots and select proposals, so two patients can compete for the same time.",
-        PatientAgent.request_slot, None,
-    ),
 }
 
 
@@ -76,28 +64,17 @@ def agent_catalog():
     return catalog
 
 
-def agent_overview(society, patient=None):
-    """Return shared counters and the caller's own patient identity."""
-    agents = list(society.agents.values())
-    if patient:
-        agents.append(patient)
+def agent_overview(society):
+    """Return the dashboard roster and shared activity counters."""
     return {
         "agents": [
             {
                 "id": agent.agent_id, "name": agent.name, "role": agent.role,
-                "detail": (agent.attributes.get("department") if agent.role == "doctor" else
-                           "Synthetic participant" if agent.attributes.get("kind") == "synthetic" else ""),
                 "state": agent.state, "last": agent.last_act or "",
                 "actions": agent.messages_handled, "messages": agent.messages_exchanged,
             }
-            for agent in agents
+            for agent in society.agents.values() if agent.role in ROLES
         ],
         "messages": society.env.metrics["messages"],
         "replans": society.env.metrics["replans"],
-        "publications": [
-            {"id": message.id, "agent": message.sender, "event": message.content["event"],
-             "date": message.content.get("date")}
-            for message in society.transcript[-100:]
-            if message.content.get("event") in {"availability_updated", "doctor_leave"}
-        ][-6:],
     }

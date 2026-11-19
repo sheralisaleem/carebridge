@@ -17,7 +17,6 @@ from starlette.staticfiles import StaticFiles
 from starlette.websockets import WebSocketDisconnect
 
 from .agent_catalog import agent_catalog, agent_overview
-from .agents.patient import PatientAgent
 from .auth import Accounts, AuthError, SESSION_LIFETIME
 from .clinic_db import get_patient, set_fault
 from .clinic_tools import ClinicService
@@ -185,20 +184,17 @@ def create_app(settings=None, llm=None, mail=None):
         if request.url.path == "/simulation":
             return render(request, "simulation.html", "Simulation",
                           enabled=settings.simulation_enabled and user["role"] == "patient")
-        return render(request, "agents.html", "Agents", overview=await overview_for(user), catalog=agent_catalog())
+        return render(request, "agents.html", "Agents", overview=await dashboard_overview(), catalog=agent_catalog())
 
-    async def overview_for(user):
-        patient = get_patient(settings.clinic_db, user["patient_id"]) if user["role"] == "patient" else None
+    async def dashboard_overview():
         async with world_lock:
-            society = state["runtime"].society
-            society.refresh_doctors()
-            return agent_overview(society, PatientAgent(patient) if patient else None)
+            return agent_overview(state["runtime"].society)
 
     async def agents_overview_route(request):
         user = auth.user(request)
         if not user:
             return JSONResponse({"message": "Sign in to view agent activity."}, 401)
-        return JSONResponse(await overview_for(user))
+        return JSONResponse(await dashboard_overview())
 
     async def kb_search(request):
         if not auth.user(request):

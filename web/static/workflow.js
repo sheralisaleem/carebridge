@@ -5,7 +5,8 @@ export function mountWorkflow(root, inspector) {
   const page = root.dataset.workflow;
   const status = get('[data-workflow-status]', root);
   const choices = get('[data-choices]', root);
-  const chat = get('#chat-log');
+  const chat = get('#chat-log', root);
+  const chatScroll = get('#conversation-scroll', root);
   const activity = mountAssistantActivity(root, inspector);
   const dialog = get('#confirm-dialog');
   const channel = 'BroadcastChannel' in window
@@ -35,7 +36,10 @@ export function mountWorkflow(root, inspector) {
     const entry = node('div', null, `chat-message ${author}`);
     entry.append(node('span', author === 'patient' ? 'You' : 'CareBridge', 'chat-author'), node('p', message));
     chat.append(entry);
-    chat.scrollTop = chat.scrollHeight;
+  }
+
+  function showLatestChat() {
+    if (chatScroll) chatScroll.scrollTop = chatScroll.scrollHeight;
   }
 
   function enterStep(index) {
@@ -52,7 +56,7 @@ export function mountWorkflow(root, inspector) {
     if (!slots.length) return;
     enterStep(1);
     const list = node('ol', null, 'choices');
-    for (const [index, slot] of slots.entries()) {
+    for (const slot of slots) {
       const row = node('li', null, 'choice');
       const detail = node('div', null, 'choice-detail');
       detail.append(node('strong', `${prettyDate(slot.date)} · ${slot.start_time}`),
@@ -62,7 +66,6 @@ export function mountWorkflow(root, inspector) {
       button.dataset.action = appointmentId ? 'reschedule' : 'book';
       button.dataset.slot = slot.slot_id;
       if (appointmentId) button.dataset.appointment = appointmentId;
-      if (activity) row.append(node('span', index + 1, 'choice-index'));
       row.append(detail, button);
       list.append(row);
     }
@@ -193,6 +196,7 @@ export function mountWorkflow(root, inspector) {
         } else notice(status, text);
         renderSlots(event.slots || [], event.reschedule_id);
         if (event.appointment_action) renderAppointmentChoices(event.appointments || [], event.appointment_action);
+        showLatestChat();
         break;
       }
       case 'state':
@@ -206,6 +210,7 @@ export function mountWorkflow(root, inspector) {
         break;
       case 'confirm_timeout':
         closeDialog(); notice(status, 'Approval expired. No change was made.', true);
+        showLatestChat();
         break;
       case 'turn_start':
         busy = true;
@@ -222,6 +227,7 @@ export function mountWorkflow(root, inspector) {
       case 'error':
         activity?.error(event.message);
         busy = false; available(); notice(status, event.message, true);
+        showLatestChat();
         break;
     }
   }
@@ -257,10 +263,27 @@ export function mountWorkflow(root, inspector) {
       const task = { action: button.dataset.action };
       if (button.dataset.appointment) task.appointment_id = button.dataset.appointment;
       if (button.dataset.slot) task.slot_id = button.dataset.slot;
-      if (send({ type: 'action', task })) notice(status, 'Checking current availability…');
+      if (send({ type: 'action', task })) {
+        notice(status, 'Checking current availability…');
+        showLatestChat();
+      }
     }
-    if (button.dataset.suggest && send({ type: 'user', text: button.dataset.suggest })) addChat('patient', button.dataset.suggest);
+    if (button.dataset.suggest && send({ type: 'user', text: button.dataset.suggest })) {
+      addChat('patient', button.dataset.suggest);
+      showLatestChat();
+    }
   });
+
+  const views = all('[data-assistant-view]', root);
+  for (const view of views) {
+    view.addEventListener('click', () => {
+      if (root.dataset.view === view.dataset.assistantView) return;
+      root.dataset.view = view.dataset.assistantView;
+      for (const button of views) button.setAttribute('aria-pressed', String(button === view));
+      if (root.dataset.view === 'conversation') showLatestChat();
+      else activity.showLatest();
+    });
+  }
 
   const chatForm = get('#chat-form', root);
   if (chatForm) {
@@ -270,6 +293,7 @@ export function mountWorkflow(root, inspector) {
       const text = input.value.trim();
       if (text && send({ type: 'user', text })) {
         addChat('patient', text);
+        showLatestChat();
         input.value = '';
       }
     });
