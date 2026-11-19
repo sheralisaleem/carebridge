@@ -10,7 +10,7 @@
 
 CareBridge is a simulated clinic with patient and doctor portals. A live LLM turns a patient’s request into a structured plan. Python agents search for appointments, check policies, manage preferences, and replan when availability changes. The interface shows who did the work and lets you inspect the agent’s Python code.
 
-[Quick start](#quick-start) · [Demo walkthrough](#demo-walkthrough) · [Architecture](#architecture) · [Testing](#testing) · [Viva guide](docs/viva.md)
+[Screenshots](#screenshots) · [Quick start](#quick-start) · [Demo walkthrough](#demo-walkthrough) · [Architecture](#architecture) · [Testing](#testing) · [Viva guide](docs/viva.md)
 
 ## What you can do
 
@@ -18,6 +18,37 @@ CareBridge is a simulated clinic with patient and doctor portals. A live LLM tur
 - **Doctors** can publish weekly hours, add or block individual slots, and see upcoming visits. Schedule edits preserve confirmed bookings.
 - **Presenters** can follow live handoffs and approval waits in the Assistant, open agent KPIs and source excerpts, and simulate slot conflicts or doctor leave.
 - **Policy and memory** support includes cited answers from the clinic knowledge base and saved scheduling preferences that carry across conversations.
+
+## Screenshots
+
+### Clinic homepage
+
+![CareBridge homepage with appointment booking, doctor directory, and Assistant shortcuts](docs/screenshots/home.jpg)
+
+### Assistant and agent timeline
+
+![The Assistant shows available slots and asks for booking approval alongside the color-coded agent timeline](docs/screenshots/assistant.jpg)
+
+<details>
+<summary>Agents dashboard</summary>
+
+![The Agents dashboard with four activity metrics, six color-coded workflow agents, and recent handoffs](docs/screenshots/agents.jpg)
+
+</details>
+
+<details>
+<summary>MCP tool reference</summary>
+
+![The MCP reference with get_slot expanded to show its caller, inputs and outputs, and Python source](docs/screenshots/mcp.jpg)
+
+</details>
+
+<details>
+<summary>Doctor availability</summary>
+
+![The doctor portal showing weekly working hours and date-specific slot controls](docs/screenshots/doctor-availability.jpg)
+
+</details>
 
 ## Quick start
 
