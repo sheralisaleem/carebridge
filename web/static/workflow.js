@@ -1,22 +1,32 @@
 import { all, clearActivity, get, node, notice, prettyDate, recordActivity } from './ui.js';
 import { mountAssistantActivity } from './assistant-activity.js';
+import { mountAssistantChat } from './assistant-chat.js';
 
 export function mountWorkflow(root, inspector) {
   const page = root.dataset.workflow;
   const status = get('[data-workflow-status]', root);
   const choices = get('[data-choices]', root);
-  const chat = get('#chat-log', root);
-  const chatScroll = get('#conversation-scroll', root);
+  const chat = mountAssistantChat(root);
+  const connection = get('#conversation-state', root);
   const activity = mountAssistantActivity(root, inspector);
   const dialog = get('#confirm-dialog');
+  const approval = get('#assistant-approval', root);
+  const decline = get(approval ? '#assistant-decline' : '#decline');
+  const approve = get(approval ? '#assistant-approve' : '#approve');
+  const views = all('[data-assistant-view]', root);
   const channel = 'BroadcastChannel' in window
     ? new BroadcastChannel(`carebridge:${document.body.dataset.account}`) : null;
   let traceSession = '', traceTurn = '';
+  let pendingPrompt = '';
   let socket, connected = false, busy = false, pending = null, connectAttempts = 0, focusBeforeConfirm;
 
   function available() {
     all('button[type="submit"], [data-action], [data-suggest], #new-session', root)
       .forEach(button => { button.disabled = !connected || busy; });
+    if (!connection) return;
+    const label = connected ? (busy ? 'In progress' : 'Connected') : (connectAttempts ? 'Disconnected' : 'Connecting');
+    connection.dataset.state = connected ? (busy ? 'busy' : 'online') : 'offline';
+    connection.textContent = label;
   }
 
   function send(message, turn = true) {
@@ -24,23 +34,14 @@ export function mountWorkflow(root, inspector) {
     socket.send(JSON.stringify(message));
     if (turn) {
       busy = true;
+      pendingPrompt = message.type === 'user' ? message.text : '';
+      chat?.showRetry('');
       available();
     }
     return true;
   }
 
-  function addChat(author, message) {
-    if (!chat) return;
-    const intro = get('#chat-intro');
-    if (intro) intro.hidden = true;
-    const entry = node('div', null, `chat-message ${author}`);
-    entry.append(node('span', author === 'patient' ? 'You' : 'CareBridge', 'chat-author'), node('p', message));
-    chat.append(entry);
-  }
-
-  function showLatestChat() {
-    if (chatScroll) chatScroll.scrollTop = chatScroll.scrollHeight;
-  }
+  const updateChat = render => chat ? chat.update(render) : render();
 
   function enterStep(index) {
     all('.steps li', root).forEach((step, position) => {
@@ -144,8 +145,8 @@ export function mountWorkflow(root, inspector) {
     if (event.turn_id) traceTurn = event.turn_id;
     if (['agent_status', 'agent_message', 'replan'].includes(event.kind)) {
       publish(event);
-      activity?.accept(event);
     }
+    if (['agent_status', 'agent_message', 'plan', 'replan', 'tool_call', 'tool_result'].includes(event.kind)) activity?.accept(event);
     const technical = get('#technical-trace');
     if (technical && ['plan', 'replan', 'agent_message', 'tool_call', 'tool_result', 'rag', 'memory', 'guardrail', 'confirm'].includes(event.kind)) {
       const detail = node('details');
@@ -158,24 +159,36 @@ export function mountWorkflow(root, inspector) {
   }
 
   function closeDialog() {
+    if (approval) approval.hidden = true;
     if (dialog.open) dialog.close();
     pending = null;
-    if (focusBeforeConfirm?.isConnected) focusBeforeConfirm.focus();
+    if (focusBeforeConfirm) {
+      if (focusBeforeConfirm.isConnected && !focusBeforeConfirm.disabled) focusBeforeConfirm.focus({ preventScroll: true });
+      if (chat && document.activeElement === document.body) get('#message', root).focus({ preventScroll: true });
+      focusBeforeConfirm = null;
+    }
   }
 
   function answer(approved) {
-    if (pending) send({ type: 'confirm', id: pending, approved }, false);
+    if (pending && send({ type: 'confirm', id: pending, approved }, false) && approved) {
+      pendingPrompt = '';
+      chat?.setThinking(true);
+    }
     closeDialog();
   }
 
   function openConfirm(event) {
+    chat?.setThinking(false);
     inspector?.close();
     enterStep(2);
     pending = event.id;
     focusBeforeConfirm = document.activeElement;
-    get('#confirm-detail').textContent = event.summary;
-    if (!dialog.open) dialog.showModal();
-    get('#decline').focus();
+    get(approval ? '#assistant-approval-detail' : '#confirm-detail').textContent = event.summary;
+    if (approval) {
+      setView('conversation');
+      chat.update(() => { approval.hidden = false; });
+    } else if (!dialog.open) dialog.showModal();
+    decline.focus();
   }
 
   function receive(event) {
@@ -184,19 +197,20 @@ export function mountWorkflow(root, inspector) {
         traceSession = event.session_id;
         activity?.ready();
         connected = true; busy = false; connectAttempts = 0;
-        notice(status, null); available();
+        updateChat(() => notice(status, null)); available();
         break;
       case 'assistant': {
+        pendingPrompt = '';
         const text = event.slots?.length ? event.text.split('\n\n').map(section =>
           section.startsWith('Choose an available time:\n') ? 'Choose an available time below.' : section
         ).join('\n\n') : event.text;
-        if (chat) {
-          addChat('assistant', text);
-          notice(status, null);
-        } else notice(status, text);
-        renderSlots(event.slots || [], event.reschedule_id);
-        if (event.appointment_action) renderAppointmentChoices(event.appointments || [], event.appointment_action);
-        showLatestChat();
+        updateChat(() => {
+          if (chat) chat.append('assistant', text);
+          notice(status, chat ? null : text);
+          renderSlots(event.slots || [], event.reschedule_id);
+          if (event.appointment_action) renderAppointmentChoices(event.appointments || [], event.appointment_action);
+        });
+        chat?.setThinking(false);
         break;
       }
       case 'state':
@@ -209,25 +223,33 @@ export function mountWorkflow(root, inspector) {
         openConfirm(event);
         break;
       case 'confirm_timeout':
-        closeDialog(); notice(status, 'Approval expired. No change was made.', true);
-        showLatestChat();
+        closeDialog();
+        updateChat(() => notice(status, 'Approval expired. No change was made.', true));
         break;
       case 'turn_start':
         busy = true;
         activity?.start();
-        if (activity) notice(status, null);
+        if (chat) {
+          updateChat(() => notice(status, null));
+          chat.setThinking(true);
+        }
         else notice(status, 'Working on your request…');
         available();
         break;
       case 'turn_end':
+        pendingPrompt = '';
+        chat?.setThinking(false);
         closeTraceTurn();
         activity?.finish();
         busy = false; available();
         break;
       case 'error':
+        chat?.setThinking(false);
         activity?.error(event.message);
-        busy = false; available(); notice(status, event.message, true);
-        showLatestChat();
+        busy = false; available();
+        updateChat(() => notice(status, event.message, true));
+        chat?.showRetry(pendingPrompt);
+        pendingPrompt = '';
         break;
     }
   }
@@ -241,20 +263,26 @@ export function mountWorkflow(root, inspector) {
     socket.onclose = () => {
       connected = false;
       busy = false;
+      chat?.setThinking(false);
       closeDialog();
-      available();
       connectAttempts += 1;
+      available();
       closeTraceTurn();
       const message = connectAttempts >= 3 ? 'Reload or sign in again.' : 'Reconnecting to the clinic…';
-      if (activity) activity.offline(message);
-      else notice(status, message, true);
+      activity?.offline(message);
+      updateChat(() => notice(status, message, true));
+      if (pendingPrompt) chat?.showRetry(pendingPrompt);
+      pendingPrompt = '';
       if (connectAttempts < 3) setTimeout(connect, 900 * connectAttempts);
     };
   }
 
-  get('#approve').addEventListener('click', () => answer(true));
-  get('#decline').addEventListener('click', () => answer(false));
+  approve.addEventListener('click', () => answer(true));
+  decline.addEventListener('click', () => answer(false));
   dialog.addEventListener('cancel', event => { event.preventDefault(); answer(false); });
+  approval?.addEventListener('keydown', event => {
+    if (event.key === 'Escape') { event.preventDefault(); answer(false); }
+  });
 
   root.addEventListener('click', event => {
     const button = event.target.closest('button');
@@ -264,25 +292,25 @@ export function mountWorkflow(root, inspector) {
       if (button.dataset.appointment) task.appointment_id = button.dataset.appointment;
       if (button.dataset.slot) task.slot_id = button.dataset.slot;
       if (send({ type: 'action', task })) {
-        notice(status, 'Checking current availability…');
-        showLatestChat();
+        updateChat(() => notice(status, 'Checking current availability…'));
       }
     }
     if (button.dataset.suggest && send({ type: 'user', text: button.dataset.suggest })) {
-      addChat('patient', button.dataset.suggest);
-      showLatestChat();
+      chat.update(() => chat.append('patient', button.dataset.suggest));
+      get('#message', root).focus({ preventScroll: true });
     }
   });
 
-  const views = all('[data-assistant-view]', root);
+  function setView(view) {
+    if (root.dataset.view === view) return;
+    root.dataset.view = view;
+    for (const button of views) button.setAttribute('aria-pressed', String(button.dataset.assistantView === view));
+    if (view === 'conversation') chat.showLatest();
+    else activity.showLatest();
+  }
+
   for (const view of views) {
-    view.addEventListener('click', () => {
-      if (root.dataset.view === view.dataset.assistantView) return;
-      root.dataset.view = view.dataset.assistantView;
-      for (const button of views) button.setAttribute('aria-pressed', String(button === view));
-      if (root.dataset.view === 'conversation') showLatestChat();
-      else activity.showLatest();
-    });
+    view.addEventListener('click', () => setView(view.dataset.assistantView));
   }
 
   const chatForm = get('#chat-form', root);
@@ -292,9 +320,8 @@ export function mountWorkflow(root, inspector) {
       event.preventDefault();
       const text = input.value.trim();
       if (text && send({ type: 'user', text })) {
-        addChat('patient', text);
-        showLatestChat();
-        input.value = '';
+        chat.update(() => chat.append('patient', text));
+        chat.setDraft('', true);
       }
     });
     input.addEventListener('keydown', event => {
@@ -306,11 +333,10 @@ export function mountWorkflow(root, inspector) {
 
   get('#new-session')?.addEventListener('click', () => {
     if (send({ type: 'new_session' })) {
-      all('.chat-message').forEach(message => message.remove());
-      get('#chat-intro').hidden = false;
       activity?.reset();
       get('#technical-trace').replaceChildren();
       renderSlots([], null);
+      chat.reset();
       clearActivity();
       channel?.postMessage({ kind: 'activity_reset' });
     }

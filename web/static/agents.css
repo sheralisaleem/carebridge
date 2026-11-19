@@ -23,21 +23,18 @@
 .roster-header { margin-bottom: 14px; }
 .agent-grid { display: grid; gap: 10px; grid-template-columns: repeat(3, minmax(0, 1fr)); }
 .agent-card {
-  --role-ink: #245b70; --role-bg: #edf4f5;
   display: flex; flex-direction: column; min-width: 0; overflow: hidden;
   border: 1px solid var(--card-border); border-radius: 11px; background: #fff; padding: 11px 11px 0;
   transition: transform .2s ease, border-color .2s ease, box-shadow .2s ease;
 }
-.agent-card[data-role="safety"] { --role-ink: #2a624f; --role-bg: #e9f4ef; }
-.agent-card[data-role="policy"], .agent-card[data-role="memory"] { --role-ink: #534768; --role-bg: #f2eff7; }
-.agent-card[data-state="working"] { border-color: #62a2b5; box-shadow: inset 0 2px 0 #62a2b5; }
+.agent-card[data-state="working"] { border-color: var(--agent-color, #62a2b5); box-shadow: inset 0 2px 0 var(--agent-color, #62a2b5); }
 .agent-card[data-state="waiting"] { border-color: #c6a36a; box-shadow: inset 0 2px 0 #c6a36a; }
 .agent-card-open { display: flex; align-items: center; gap: 8px; border: 0; background: transparent; color: var(--ink); padding: 3px 0; text-align: left; width: 100%; }
-.agent-card-icon { width: 34px; height: 34px; border-radius: 7px; color: var(--role-ink); background: var(--role-bg); }
+.agent-card-icon { width: 34px; height: 34px; border-radius: 7px; color: var(--agent-color, var(--blue)); background: var(--agent-tint, var(--soft)); }
 .agent-card-icon .icon { width: 17px; height: 17px; }
 .agent-card-name { display: grid; gap: 1px; min-width: 0; }
-.agent-card-name strong { font-size: .86rem; line-height: 1.28; overflow-wrap: anywhere; }
-.agent-card-arrow { margin-left: auto; color: var(--role-ink); transition: transform .2s ease; align-self: start; }
+.agent-card-name strong { color: var(--agent-color, var(--ink)); font-size: .86rem; line-height: 1.28; overflow-wrap: anywhere; }
+.agent-card-arrow { margin-left: auto; color: var(--agent-color, var(--blue)); transition: transform .2s ease; align-self: start; }
 .agent-card-arrow .icon { width: 15px; height: 15px; }
 .agent-card > p { color: var(--muted); font-size: .78rem; margin: 9px 0 7px; }
 .agent-card-status { margin-top: auto; display: flex; align-items: center; gap: 6px; color: var(--muted); min-height: 23px; font-size: .71rem; font-weight: 640; }
@@ -58,11 +55,13 @@
 .flow-surface .flow-lines { height: 46px; }
 .flow-surface .flow-node { justify-self: start; max-width: 100%; line-height: 1.25; overflow-wrap: anywhere; font-size: .7rem; background: #f2f6f7; }
 .flow-surface .flow-node:last-child { justify-self: end; }
+.flow-surface .flow-node[data-agent-role] { color: var(--agent-color); background: var(--agent-tint); }
 .flow-surface .flow-travel { stroke-width: 1.5; stroke-dasharray: 9 100; }
 .flow-surface .flow-travel.active { animation: handoff-line .8s ease-out; }
 .agent-feed .activity-list li { padding: 8px 0; font-size: .82rem; }
 .agent-feed .activity-list li:last-child { border-bottom: 0; }
 .agent-feed .activity-list span { font-size: .78rem; }
+.agent-feed .activity-list [data-agent-role] strong { color: var(--agent-color, var(--ink)); }
 
 /* Agent code and metric dialog */
 .agent-dialog {
@@ -73,6 +72,7 @@
 .agent-dialog[open] { animation: inspector-in .22s ease-out; }
 .agent-dialog::backdrop { background: #102d3980; }
 .inspector-top { display: flex; align-items: center; gap: 12px; padding: 17px 20px; border-bottom: 1px solid var(--line); background: #fbfdfd; }
+#inspector-icon[data-agent-role] { background: var(--agent-tint); color: var(--agent-color); }
 .inspector-heading { flex: 1; min-width: 0; }
 .inspector-heading p { font-size: .75rem; color: var(--muted); font-weight: 630; margin-bottom: 2px; }
 .inspector-heading h2 { font-size: 1.55rem; overflow-wrap: anywhere; }
@@ -103,6 +103,7 @@
 .metric-breakdown > li:has(button) { padding: 0; }
 .breakdown-button { display: flex; width: 100%; align-items: center; justify-content: space-between; gap: 10px; border: 0; border-radius: 6px; padding: 8px 6px; text-align: left; color: var(--ink); background: transparent; }
 .breakdown-button:hover { background: var(--soft); }
+.breakdown-button[data-agent-role] > span { color: var(--agent-color, var(--ink)); font-weight: 650; }
 .breakdown-button strong { color: var(--blue-dark); }
 #back-to-metric { margin-top: 6px; }
 

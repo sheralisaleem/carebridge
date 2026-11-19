@@ -69,13 +69,6 @@ button, a, input, textarea, select, summary { -webkit-tap-highlight-color: trans
 .link-button { border: 0; padding: 4px 0; background: none; text-decoration: underline; text-underline-offset: .19em; }
 .link-button.danger { color: var(--red); }
 .eyebrow { margin-bottom: 14px; font-size: .76rem; letter-spacing: .13em; color: var(--blue); font-weight: 730; text-transform: uppercase; }
-.home-hero { display: grid; grid-template-columns: .92fr 1.08fr; align-items: center; gap: clamp(36px, 7vw, 98px); padding-block: 65px; }
-.hero-copy h1 { font-size: clamp(3.6rem, 6.4vw, 6.3rem); line-height: .99; letter-spacing: -.075em; }
-.hero-copy h1 + p { margin: 24px 0 27px; max-width: 34ch; font-size: 1.13rem; color: var(--muted); }
-.hero-copy .button-row { gap: 20px; }
-.hero-photo { overflow: hidden; border-radius: 16px; min-width: 0; }
-.hero-photo img { display: block; width: 100%; height: auto; aspect-ratio: 1.34; object-fit: cover; }
-.home-directory { background: var(--soft); border-block: 1px solid var(--line); padding-block: 27px; }
 .link-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
 .callout { display: flex; gap: 13px; align-items: center; min-height: 82px; padding: 15px; border: 1px solid var(--line); border-radius: var(--radius); background: #fff; text-decoration: none; color: var(--ink); transition: border-color .18s; }
 .callout:hover { border-color: #86adb8; }
@@ -210,11 +203,7 @@ summary { cursor: pointer; font-weight: 650; padding: 9px 0; }
   .primary-nav a { font-size: .83rem; min-height: 39px; }
   .container { width: calc(100% - 32px); }
   .page { padding-top: 36px; }
-  .home-hero, .workspace-grid, .equal-grid, .auth-layout { grid-template-columns: 1fr; gap: 17px; }
-  .home-hero { padding-block: 36px; gap: 26px; }
-  .hero-copy h1 { font-size: clamp(3.3rem, 11vw, 5rem); }
-  .hero-copy br { display: none; }
-  .hero-photo img { aspect-ratio: 1.7; }
+  .workspace-grid, .equal-grid, .auth-layout { grid-template-columns: 1fr; gap: 17px; }
   .auth-aside { display: none; }
   .auth-card { width: min(100%, 440px); margin-inline: auto; }
   .auth-layout { padding-block: 35px; }

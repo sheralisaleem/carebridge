@@ -50,6 +50,7 @@ export function mountAgentInspector() {
     const role = catalog[agent.role];
     if (!role) return;
     if (!dialog.open) previousMetric = null;
+    icon.dataset.agentRole = agent.role;
     icon.replaceChildren(iconNode(role.icon));
     category.textContent = role.title === agent.name ? 'Agent details' : role.title;
     title.textContent = agent.name;
@@ -78,6 +79,7 @@ export function mountAgentInspector() {
 
   function showMetric(metric) {
     previousMetric = metric;
+    delete icon.dataset.agentRole;
     icon.replaceChildren(iconNode(metric.icon));
     category.textContent = 'Clinic activity';
     title.textContent = `${metric.title} · ${metric.value}`;
@@ -88,6 +90,7 @@ export function mountAgentInspector() {
       if (item.agent) {
         const button = node('button', null, 'breakdown-button');
         button.type = 'button';
+        button.dataset.agentRole = item.agent.role;
         button.append(node('span', item.label), node('strong', item.value));
         button.addEventListener('click', () => showAgent(item.agent, metric.key));
         row.append(button);

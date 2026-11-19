@@ -1,14 +1,30 @@
 {% extends 'base.html' %}
 {% from 'macros.html' import icon %}
+{% block early_head %}
+<meta name="color-scheme" content="light">
+<script src="/ui/assistant-theme.js"></script>
+{% endblock %}
 {% block page_head %}
-<link rel="stylesheet" href="/static/agents.css">
-<link rel="stylesheet" href="/static/assistant.css">
+<link rel="stylesheet" href="/ui/agents.css">
+<link rel="stylesheet" href="/ui/assistant-tokens.css">
+<link rel="stylesheet" href="/ui/agent-colors.css">
+<link rel="stylesheet" href="/ui/assistant.css">
 {% endblock %}
 {% block content %}
 <section class="container assistant-page" data-workflow="assistant" data-view="conversation">
   <header class="assistant-heading">
     <div><h1>Appointment assistant</h1><p>Find a time, manage a visit, or ask about clinic policies.</p></div>
-    <button class="button secondary-button compact" id="new-session" type="button">{{ icon('chat') }} New conversation</button>
+    <div class="assistant-actions">
+      <label class="theme-control" for="assistant-theme" hidden>
+        Theme
+        <select id="assistant-theme">
+          <option value="light" selected>Light</option>
+          <option value="dark">Dark</option>
+          <option value="system">System</option>
+        </select>
+      </label>
+      <button class="button secondary-button compact" id="new-session" type="button" disabled>{{ icon('chat') }} New conversation</button>
+    </div>
   </header>
 
   <div class="assistant-switcher" role="group" aria-label="Assistant view">
@@ -18,25 +34,50 @@
 
   <div class="assistant-grid">
     <section class="chat-panel" id="conversation-panel" aria-label="Conversation">
-      <div class="chat-panel-heading">{{ icon('chat') }}<h2>Conversation</h2></div>
-      <div id="conversation-scroll" class="assistant-scroll" tabindex="0" role="region" aria-label="Messages and appointment options">
-        <div id="chat-log" class="chat-log" role="log" aria-live="polite">
-          <div id="chat-intro">
-            <h3>How can we help?</h3>
-            <div class="suggestions">
-              <button type="button" class="button secondary-button" data-suggest="Find a General Medicine appointment this week">{{ icon('calendar') }} Find an appointment</button>
-              <button type="button" class="button secondary-button" data-suggest="Show my current appointments">{{ icon('clock') }} Check my appointments</button>
-              <button type="button" class="button secondary-button" data-suggest="What is the clinic's cancellation policy?">{{ icon('book') }} Cancellation policy</button>
+      <div class="chat-panel-heading">
+        {{ icon('chat') }}<h2>Conversation</h2>
+        <span class="connection-state" id="conversation-state" data-state="offline">Connecting</span>
+      </div>
+      <div class="conversation-feed">
+        <div id="conversation-scroll" class="assistant-scroll" tabindex="0" role="region" aria-label="Messages and appointment options">
+          <div id="chat-log" class="chat-log" role="log" aria-live="polite" aria-relevant="additions">
+            <div id="chat-intro">
+              <span class="icon-box" aria-hidden="true">{{ icon('chat') }}</span>
+              <h3>How can we help?</h3>
+              <div class="suggestions">
+                <button type="button" class="button secondary-button" data-suggest="Find a General Medicine appointment this week" disabled>{{ icon('calendar') }} Find an appointment</button>
+                <button type="button" class="button secondary-button" data-suggest="Show my current appointments" disabled>{{ icon('clock') }} Check my appointments</button>
+                <button type="button" class="button secondary-button" data-suggest="What is the clinic's cancellation policy?" disabled>{{ icon('book') }} Cancellation policy</button>
+              </div>
             </div>
           </div>
+          <div data-choices hidden></div>
+          <p data-workflow-status class="notice compact-notice" role="status" hidden></p>
+          <button id="retry-message" type="button" class="button secondary-button compact" hidden>Retry in composer</button>
+          <div id="assistant-thinking" role="status" hidden>
+            <span class="thinking-dots" aria-hidden="true"><i></i><i></i><i></i></span>
+            <span>CareBridge is working</span>
+          </div>
         </div>
-        <div data-choices hidden></div>
-        <p data-workflow-status class="notice compact-notice" role="status" hidden></p>
+        <button id="jump-latest" type="button" class="button secondary-button" hidden>Jump to latest <span aria-hidden="true">↓</span></button>
       </div>
+      <section id="assistant-approval" class="assistant-approval" aria-labelledby="assistant-approval-title" hidden>
+        <div>
+          <h3 id="assistant-approval-title">Review this appointment change</h3>
+          <p id="assistant-approval-detail"></p>
+        </div>
+        <div class="button-row">
+          <button class="button secondary-button compact" id="assistant-decline" type="button" aria-describedby="assistant-approval-detail">Decline</button>
+          <button class="button primary compact" id="assistant-approve" type="button" aria-describedby="assistant-approval-detail">Confirm change</button>
+        </div>
+      </section>
       <form id="chat-form" class="composer"><label for="message">Message</label><div>
-        <textarea id="message" name="message" rows="1" maxlength="2000" enterkeyhint="send" placeholder="Ask about appointments or clinic policies" required></textarea>
-        <button class="button primary" type="submit">Send {{ icon('arrow') }}</button>
+        <div class="composer-field" data-draft="">
+          <textarea id="message" name="message" rows="1" maxlength="2000" enterkeyhint="send" placeholder="Ask about appointments or clinic policies" required></textarea>
+        </div>
+        <button class="button primary" type="submit" aria-describedby="conversation-state" disabled>Send {{ icon('arrow') }}</button>
       </div></form>
+      <span class="assistant-announcement" id="chat-feedback" role="status"></span>
     </section>
 
     <aside class="activity-panel" id="activity-panel" aria-labelledby="activity-heading">
@@ -53,14 +94,10 @@
         </div>
         <button type="button" class="button secondary-button compact" id="inspect-working-agent" hidden>View code {{ icon('arrow') }}</button>
       </div>
-      <div id="assistant-handoff" class="assistant-handoff" hidden>
-        <p>Latest handoff <span id="handoff-action"></span></p>
-        <div class="handoff-route" id="handoff-route"></div>
-      </div>
       <div class="activity-timeline">
         <h3 id="timeline-heading">Conversation timeline</h3>
         <div id="activity-scroll" class="assistant-scroll" tabindex="0" role="region" aria-labelledby="timeline-heading">
-          <p id="activity-empty">Send a message to see the agents and handoffs here.</p>
+          <p id="activity-empty">Send a message to see the plan, agent steps, and tool calls.</p>
           <ol id="activity" class="request-stages" aria-labelledby="timeline-heading"></ol>
         </div>
       </div>

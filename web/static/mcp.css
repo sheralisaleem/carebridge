@@ -1,0 +1,31 @@
+.mcp-layout { display: grid; grid-template-columns: minmax(0, 2.1fr) minmax(240px, 1fr); gap: 22px; }
+.mcp-tool-list, .mcp-guide { display: grid; align-content: start; gap: 10px; }
+.mcp-tool-list { margin-top: 12px; }
+.mcp-tool { border: 1px solid var(--line); border-radius: var(--radius); background: #fff; scroll-margin-block: 14px; }
+.mcp-tool:target, .mcp-tool[open] { border-color: #91b5c3; }
+.mcp-tool > summary { display: flex; align-items: center; gap: 10px; padding: 12px; border-radius: var(--radius); }
+.mcp-tool > summary::-webkit-details-marker { display: none; }
+.mcp-tool > summary:hover { background: var(--soft); }
+.mcp-chevron { margin-inline-start: 2px; min-width: 14px; text-align: center; color: var(--blue-dark); }
+.mcp-chevron::after { content: '+'; }
+.mcp-tool[open] .mcp-chevron::after { content: '−'; }
+.mcp-tool .icon-box { width: 36px; height: 36px; border-radius: 8px; }
+.mcp-summary { display: grid; gap: 2px; flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.mcp-summary span { color: var(--muted); font-size: .83rem; font-weight: 450; }
+.mcp-mode { white-space: nowrap; }
+.mcp-mode[data-mode="write"] { color: var(--amber); background: #fcf3df; }
+.mcp-detail { padding: 0 14px 14px; }
+.mcp-detail dl { display: grid; gap: 7px; margin: 0 0 12px; }
+.mcp-detail dl > div { display: grid; grid-template-columns: 116px minmax(0, 1fr); gap: 8px; border-top: 1px solid var(--line); padding-top: 7px; }
+.mcp-detail dt { font-weight: 660; }
+.mcp-detail dd { margin: 0; color: var(--muted); font-size: .9rem; }
+.mcp-guide ol, .mcp-guide ul { padding-inline-start: 18px; margin-bottom: 0; }
+.mcp-guide li + li { margin-top: 8px; }
+.mcp-guide li span { display: block; color: var(--muted); font-size: .85rem; }
+.mcp-guide .soft-card p { margin-top: 8px; }
+@media (max-width: 820px) { .mcp-layout { grid-template-columns: minmax(0, 1fr); } }
+@media (max-width: 450px) {
+  .mcp-tool > summary { flex-wrap: wrap; }
+  .mcp-tool .icon-box { display: none; }
+  .mcp-detail dl > div { grid-template-columns: minmax(0, 1fr); gap: 2px; }
+}

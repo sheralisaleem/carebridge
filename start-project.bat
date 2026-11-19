@@ -42,9 +42,7 @@ if errorlevel 1 (
     if errorlevel 1 goto :failed
 )
 
-echo Starting CareBridge. Open the URL printed by Uvicorn when startup completes.
-echo Press Ctrl+C in this window to stop the server.
-"%PYTHON%" -m clinic_agent.web --demo-doctor-signup %*
+"%PYTHON%" -m clinic_agent.web --demo-doctor-signup --pause-if-running %*
 set "STATUS=%errorlevel%"
 if "%STATUS%"=="0" goto :done
 

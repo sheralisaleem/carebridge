@@ -1,5 +1,7 @@
 import { activeState, dashboardSnapshot, stateLabel } from './agent-activity.js';
 import { agentName, get, iconNode, node, readActivity } from './ui.js';
+import { createAssistantTrace } from './assistant-trace.js';
+import { createAssistantTimeline } from './assistant-timeline.js';
 
 const handoffActions = {
   QUERY: 'Check requested', DELEGATE: 'Task delegated', INFORM: 'Result returned',
@@ -16,10 +18,9 @@ export function mountAssistantActivity(root, inspector) {
   const stages = get('#activity', root);
   const scroll = get('#activity-scroll', root);
   const empty = get('#activity-empty', root);
-  const handoff = get('#assistant-handoff', root);
-  const handoffAction = get('#handoff-action', handoff);
-  const route = get('#handoff-route', handoff);
+  const timeline = createAssistantTimeline(stages, scroll);
   const entries = new Map();
+  const trace = createAssistantTrace(timeline.append);
   let current = null;
   let last = null;
   let requests = 0;
@@ -29,14 +30,14 @@ export function mountAssistantActivity(root, inspector) {
     banner.dataset.state = state;
     title.textContent = heading;
     description.textContent = detail;
-    if (current !== agent) runIcon.replaceChildren(iconNode(inspector.catalog[agent]?.icon || 'flow'));
+    if (current !== agent) {
+      runIcon.replaceChildren(iconNode(inspector.catalog[agent]?.icon || 'flow'));
+      if (agent) runIcon.dataset.agentRole = agent;
+      else delete runIcon.dataset.agentRole;
+    }
     current = agent;
     inspect.hidden = !agent;
     if (agent) inspect.setAttribute('aria-label', `View ${agentName(agent)} code and details`);
-  }
-
-  function atLatest() {
-    return scroll.scrollHeight - scroll.clientHeight - scroll.scrollTop < 24;
   }
 
   function openAgent(id) {
@@ -49,50 +50,48 @@ export function mountAssistantActivity(root, inspector) {
 
   function createStep(event) {
     const row = node('li', null, 'request-stage');
-    row.append(node('i', null, 'stage-marker'));
+    row.dataset.agentRole = event.agent;
+    const reveal = node('div', null, 'stage-reveal');
+    const step = node('div', null, 'stage-track');
+    const marker = node('span', null, 'stage-marker');
+    marker.append(iconNode(inspector.catalog[event.agent]?.icon || 'activity'));
     const title = node('div', null, 'stage-title');
-    const icon = iconNode(inspector.catalog[event.agent]?.icon || 'activity');
-    const button = node('button', null, 'stage-agent');
+    const button = node('button', agentName(event.agent), 'stage-agent');
     button.type = 'button';
     button.setAttribute('aria-label', `Inspect ${agentName(event.agent)}`);
-    button.append(icon, node('span', agentName(event.agent)));
     button.addEventListener('click', () => openAgent(event.agent));
     const badge = node('span', null, 'stage-state');
     title.append(button, badge);
     const line = node('p', null, 'stage-detail');
     const body = node('div', null, 'stage-body');
     body.append(title, line);
-    row.append(body);
-    stages.append(row);
+    step.append(marker, body);
+    reveal.append(step);
+    row.append(reveal);
+    timeline.append(row, { step: true });
     return { row, line, badge };
   }
 
   function showHandoff(event, action) {
     const sender = event.performative === 'QUERY' ? 'Patient' : agentName(event.from);
     const recipient = agentName(event.to);
-    const from = node('span', null, 'handoff-endpoint');
-    from.append(iconNode(inspector.catalog[event.from]?.icon || 'person'), node('span', sender));
-    const to = node('span', null, 'handoff-endpoint');
-    to.append(iconNode(inspector.catalog[event.to]?.icon || 'flow'), node('span', recipient));
-    const signal = node('span', null, 'handoff-signal');
-    signal.setAttribute('role', 'img');
-    signal.setAttribute('aria-label', 'to');
-    handoff.hidden = false;
-    handoffAction.textContent = action;
-    route.replaceChildren(from, signal, to);
-
     const row = node('li', null, 'stage-message');
-    row.append(iconNode('arrow'), node('span', `${sender} → ${recipient} · ${action}`));
-    stages.append(row);
+    const from = node('span', sender, 'handoff-agent');
+    from.dataset.agentRole = event.from;
+    const to = node('span', recipient, 'handoff-agent');
+    to.dataset.agentRole = event.to;
+    const label = node('span');
+    label.append(from, ' → ', to, ` · ${action}`);
+    row.append(iconNode('arrow'), label);
+    timeline.append(row);
   }
 
   function renderEvent(event) {
     if (event.kind === 'replan') {
       const row = node('li', null, 'stage-replan');
       row.append(iconNode('repeat'), node('div', `Replan · ${event.reason || event.goal}`));
-      stages.append(row);
+      timeline.append(row);
       display('working', 'Finding a different option', event.reason);
-      return;
     }
     if (event.kind === 'agent_message') {
       const action = handoffActions[event.performative];
@@ -117,13 +116,13 @@ export function mountAssistantActivity(root, inspector) {
   }
 
   function reset() {
+    trace.end();
     last = null;
     requests = 0;
     failed = false;
     entries.clear();
-    stages.replaceChildren();
+    timeline.reset();
     empty.hidden = false;
-    handoff.hidden = true;
     display('idle', 'Ready for a request');
   }
 
@@ -133,35 +132,35 @@ export function mountAssistantActivity(root, inspector) {
 
   return {
     accept(event) {
-      const follow = atLatest();
       renderEvent(event);
-      if (follow) scroll.scrollTop = scroll.scrollHeight;
+      trace.accept(event);
     },
     ready() { display('idle', 'Ready for a request'); },
-    showLatest() { scroll.scrollTop = scroll.scrollHeight; },
+    showLatest: timeline.showLatest,
     start() {
-      const follow = atLatest();
+      trace.end();
       failed = false;
       last = null;
       entries.clear();
-      handoff.hidden = true;
       empty.hidden = true;
-      stages.append(node('li', `Request ${++requests}`, 'timeline-request'));
+      timeline.append(node('li', `Request ${++requests}`, 'timeline-request'), { boundary: true });
       display('working', 'Request received', 'Preparing the next step…');
-      if (follow) scroll.scrollTop = scroll.scrollHeight;
     },
     reset,
     finish() {
+      trace.end();
       if (failed) return;
-      const follow = atLatest();
       if (last && !activeState(last.state)) {
         display(last.state, last.state === 'completed' ? 'Request finished' : 'Request ended',
           last.detail, last.agent);
       } else display('idle', 'Ready for a request');
-      if (follow) scroll.scrollTop = scroll.scrollHeight;
     },
-    offline(message) { display('failed', 'Clinic connection interrupted', message); },
+    offline(message) {
+      trace.end();
+      display('failed', 'Clinic connection interrupted', message);
+    },
     error(message) {
+      trace.end();
       failed = true;
       display('failed', 'Request could not finish', message);
     },

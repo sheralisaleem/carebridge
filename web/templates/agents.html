@@ -1,11 +1,14 @@
 {% extends 'base.html' %}
 {% from 'macros.html' import icon %}
-{% block page_head %}<link rel="stylesheet" href="/static/agents.css">{% endblock %}
+{% block page_head %}<link rel="stylesheet" href="/ui/agent-colors.css"><link rel="stylesheet" href="/ui/agents.css">{% endblock %}
 {% block content %}
 <section class="container page agents-page" id="agents-page" data-overview="{{ overview|tojson|forceescape }}">
   <header class="page-heading split-heading">
     <div><h1>Agents</h1><p>See who handled each task and open the code behind each agent.</p></div>
-    <a class="button secondary-button" href="/knowledge">{{ icon('book') }} Knowledge</a>
+    <div class="button-row">
+      <a class="button secondary-button" href="/mcp">{{ icon('exchange') }} MCP tools</a>
+      <a class="button secondary-button" href="/knowledge">{{ icon('book') }} Knowledge</a>
+    </div>
   </header>
   <div class="metric-grid" aria-label="Clinic activity metrics">
     <button type="button" class="metric-card" data-metric-open="agents"><span class="metric-title">{{ icon('flow') }} Agents</span><strong data-total="agents">{{ overview.agents|length }}</strong><span class="metric-link">View roster {{ icon('arrow') }}</span></button>

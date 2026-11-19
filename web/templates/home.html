@@ -1,20 +1,62 @@
 {% extends 'base.html' %}
 {% from 'macros.html' import icon %}
+{% block page_head %}<link rel="stylesheet" href="/ui/home.css">{% endblock %}
 {% block content %}
-<section class="container home-hero">
-  <div class="hero-copy">
-    <p class="eyebrow">CareBridge Family Clinic</p>
-    <h1>Book a<br>clinic visit.</h1>
-    <p>Find a doctor, choose a time, and manage your appointments in one place.</p>
-    <div class="button-row"><a class="button primary" href="/book">Find an appointment {{ icon('arrow') }}</a><a class="text-link" href="/doctors">Browse doctors</a></div>
+{% set is_doctor = user and user.role == 'doctor' %}
+{% set appointments_url = '/doctor/appointments' if is_doctor else ('/appointments' if user else '/sign-in') %}
+<div class="clinic-home">
+  <section class="home-intro" aria-labelledby="home-title">
+    <div class="container home-hero">
+      <div class="home-copy">
+        <p class="home-kicker">CareBridge Family Clinic</p>
+        {% if is_doctor %}
+        <h1 id="home-title">Your clinic day,<br><em>in view.</em></h1>
+        <p class="home-lead">Publish available times and review the visits on your schedule.</p>
+        <div class="home-actions">
+          <a class="button home-primary" href="/doctor/availability">Manage availability</a>
+          <a class="home-text-link" href="{{ appointments_url }}">View appointments</a>
+        </div>
+        {% else %}
+        <h1 id="home-title">Book your next <em>clinic visit.</em></h1>
+        <p class="home-lead">Find the right doctor, choose a time, and keep your appointments in one place.</p>
+        <div class="home-actions">
+          <a class="button home-primary" href="/book">Find an appointment</a>
+          <a class="home-text-link" href="/doctors">Browse doctors</a>
+        </div>
+        {% endif %}
+      </div>
+      <div class="home-scene">
+        <figure class="home-photo">
+          <img src="/static/clinic-reception.png" alt="Sunlit clinic reception with an oak desk and seating" width="1448" height="1086" fetchpriority="high">
+        </figure>
+        {% if is_doctor %}
+        <a class="home-photo-link" href="/agents">
+          <span class="home-icon">{{ icon('activity') }}</span>
+          <span><strong>Meet the agents</strong><small>See how requests are handled</small></span>
+        </a>
+        {% else %}
+        <a class="home-photo-link" href="{{ '/assistant' if user else '/sign-in' }}">
+          <span class="home-icon">{{ icon('chat') }}</span>
+          <span><strong>Appointment Assistant</strong><small>{{ 'Ask for help finding a time' if user else 'Sign in to chat' }}</small></span>
+        </a>
+        {% endif %}
+      </div>
+    </div>
+  </section>
+  <div class="container home-links" aria-label="Clinic shortcuts">
+    <a href="/doctors" class="home-shortcut"><span class="home-icon">{{ icon('doctor') }}</span><span><strong>Find a doctor</strong><small>Browse by department</small></span></a>
+    <a href="/clinic" class="home-shortcut"><span class="home-icon">{{ icon('clock') }}</span><span><strong>Plan your visit</strong><small>Hours and what to bring</small></span></a>
+    <a href="{{ appointments_url }}" class="home-shortcut"><span class="home-icon">{{ icon('calendar') }}</span><span><strong>Your appointments</strong><small>View upcoming visits</small></span></a>
   </div>
-  <figure class="hero-photo"><img src="/static/clinic-reception.png" alt="Sunlit clinic reception with an oak desk and seating" width="1448" height="1086"></figure>
-</section>
-<section class="home-directory">
-  <div class="container link-grid">
-    <a href="/doctors" class="callout">{{ icon('doctor') }}<div><strong>Find a doctor</strong><span>Browse doctors by department.</span></div>{{ icon('arrow') }}</a>
-    <a href="/clinic" class="callout">{{ icon('clock') }}<div><strong>Plan your visit</strong><span>Check hours and what to bring.</span></div>{{ icon('arrow') }}</a>
-    <a href="{{ '/appointments' if user and user.role == 'patient' else ('/doctor/appointments' if user else '/sign-in') }}" class="callout">{{ icon('calendar') }}<div><strong>Your appointments</strong><span>View upcoming visits.</span></div>{{ icon('arrow') }}</a>
-  </div>
-</section>
+  {% if not is_doctor %}
+  <section class="container home-workflow" aria-labelledby="home-workflow-title">
+    <div><h2 id="home-workflow-title">How booking works</h2><p>CareBridge checks availability and shows the visit details before you confirm.</p></div>
+    <ol>
+      <li>{{ icon('chat') }}<span><strong>Tell us what you need</strong><small>Ask the Assistant or use the booking form.</small></span></li>
+      <li>{{ icon('calendar') }}<span><strong>Choose a time</strong><small>Pick a visit from the available options.</small></span></li>
+      <li>{{ icon('shield') }}<span><strong>Review and confirm</strong><small>Check the doctor, date, and time.</small></span></li>
+    </ol>
+  </section>
+  {% endif %}
+</div>
 {% endblock %}

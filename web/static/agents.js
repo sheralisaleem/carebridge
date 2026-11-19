@@ -10,12 +10,15 @@ export function mountAgentsPage(root, inspector) {
   const cardTemplate = get('#agent-card-template', root);
   const cards = new Map();
   const feed = get('#agent-page-activity', root);
+  const from = get('#flow-from', root);
+  const to = get('#flow-to', root);
 
   function card(agent) {
     if (cards.has(agent.id)) return cards.get(agent.id);
     const item = cardTemplate.content.firstElementChild.cloneNode(true);
     item.dataset.agent = agent.id;
     item.dataset.role = agent.role;
+    item.dataset.agentRole = agent.role;
     const info = inspector.catalog[agent.role];
     get('.agent-card-icon', item).append(iconNode(info.icon));
     get('.agent-card-name strong', item).textContent = agent.name;
@@ -57,8 +60,12 @@ export function mountAgentsPage(root, inspector) {
   }
 
   function paintHandoff(event, animate = false) {
-    get('#flow-from', root).textContent = model.rows.get(event.from).name;
-    get('#flow-to', root).textContent = model.rows.get(event.to).name;
+    const sender = model.rows.get(event.from);
+    const receiver = model.rows.get(event.to);
+    from.textContent = sender.name;
+    from.dataset.agentRole = sender.role;
+    to.textContent = receiver.name;
+    to.dataset.agentRole = receiver.role;
     get('#flow-label', root).textContent = event.performative.toLowerCase().replace(/^./, c => c.toUpperCase());
     if (animate) {
       const line = get('.flow-travel', root);
@@ -75,6 +82,8 @@ export function mountAgentsPage(root, inspector) {
     if (event.kind === 'agent_status' && !model.rows.has(event.agent)) return;
     if (event.kind === 'replan' || (event.kind === 'agent_status' && event.state !== 'working')) {
       const row = activityRow(event);
+      const role = model.rows.get(event.agent)?.role;
+      if (role) row.dataset.agentRole = role;
       feed.prepend(row);
       if (feed.children.length > 5) feed.lastChild.remove();
     }
@@ -118,8 +127,10 @@ export function mountAgentsPage(root, inspector) {
         events = [];
         feed.replaceChildren();
         get('#agent-feed-empty', root).hidden = false;
-        get('#flow-from', root).textContent = 'Sender';
-        get('#flow-to', root).textContent = 'Recipient';
+        from.textContent = 'Sender';
+        to.textContent = 'Recipient';
+        delete from.dataset.agentRole;
+        delete to.dataset.agentRole;
         get('#flow-label', root).textContent = 'Waiting for a request';
       } else {
         events = [...events, data].slice(-ACTIVITY_LIMIT);

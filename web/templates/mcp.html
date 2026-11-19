@@ -1,0 +1,59 @@
+{% extends 'base.html' %}
+{% from 'macros.html' import icon %}
+{% block page_head %}
+<link rel="stylesheet" href="/ui/agents.css">
+<link rel="stylesheet" href="/ui/mcp.css">
+<script type="module" src="/ui/mcp.js"></script>
+{% endblock %}
+{% block content %}
+<section class="container page mcp-page">
+  <header class="page-heading split-heading">
+    <div><h1>MCP tools</h1><p>See how CareBridge uses the Model Context Protocol to read and change the clinic schedule.</p></div>
+    <a class="button secondary-button" href="/agents">{{ icon('flow') }} Agent roster</a>
+  </header>
+  <div class="mcp-layout">
+    <section aria-labelledby="mcp-tools-heading">
+      <h2 id="mcp-tools-heading">Scheduling tools</h2>
+      <div class="mcp-tool-list">
+        {% for tool in tools %}
+        <details id="{{ tool.name }}" class="mcp-tool">
+          <summary>
+            <span class="icon-box" aria-hidden="true">{{ icon('shield' if tool.mode == 'write' else 'calendar') }}</span>
+            <span class="mcp-summary"><code>{{ tool.name }}</code><span>{{ tool.summary }}</span></span>
+            <span class="pill mcp-mode" data-mode="{{ tool.mode }}">{{ 'Approval required' if tool.mode == 'write' else 'Read' }}</span>
+            <span class="mcp-chevron" aria-hidden="true"></span>
+          </summary>
+          <div class="mcp-detail">
+            <dl>
+              <div><dt>Called by</dt><dd>{{ tool.owner }}</dd></div>
+              <div><dt>When it runs</dt><dd>{{ tool.usage }}</dd></div>
+              <div><dt>Input and output</dt><dd>{{ tool.contract }}</dd></div>
+            </dl>
+            <div class="source-preview"><p>{{ tool.source }}</p><pre tabindex="0" aria-label="{{ tool.name }} Python source"><code>{{ tool.code }}</code></pre></div>
+          </div>
+        </details>
+        {% endfor %}
+      </div>
+    </section>
+    <aside class="mcp-guide" aria-labelledby="mcp-flow-heading">
+      <div class="surface">
+        <h2 id="mcp-flow-heading">How a call travels</h2>
+        <ol>
+          <li><strong>Agent</strong><span>Scheduler or Front Desk selects a named tool and supplies its arguments.</span></li>
+          <li><strong>MCP client</strong><span>The Python SDK sends <code>tools/call</code> over stdio. <code>tools/list</code> exposes the schemas.</span></li>
+          <li><strong>Scheduling server</strong><span>FastMCP dispatches the call to ClinicService. SQLite enforces booking rules and returns the result.</span></li>
+        </ol>
+      </div>
+      <div class="soft-card">
+        <h2>Booking example</h2>
+        <p>Read the chosen slot, ask for approval, then book it. The service checks that the slot is still open when it writes.</p>
+        <ul>
+          <li><a href="#find_available_slots">Search for open slots</a></li>
+          <li><a href="#get_slot">Check the selected slot</a></li>
+          <li><a href="#book_appointment">Book after approval</a></li>
+        </ul>
+      </div>
+    </aside>
+  </div>
+</section>
+{% endblock %}

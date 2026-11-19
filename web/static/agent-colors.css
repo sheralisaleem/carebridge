@@ -1,0 +1,22 @@
+:root {
+  --coordinator-ink: #126475; --coordinator-tint: #def0f2;
+  --safety-ink: #23694d; --safety-tint: #e3f2e9;
+  --scheduler-ink: #315d9a; --scheduler-tint: #e6eefb;
+  --front-desk-ink: #86560e; --front-desk-tint: #f9eedc;
+  --policy-ink: #68438b; --policy-tint: #f0e9f8;
+  --memory-ink: #8b3f67; --memory-tint: #f8e9f1;
+}
+:root[data-assistant-theme="dark"] {
+  --coordinator-ink: #9bdee7; --coordinator-tint: #23414c;
+  --safety-ink: #a3dfbe; --safety-tint: #234237;
+  --scheduler-ink: #b2cdfb; --scheduler-tint: #293e5b;
+  --front-desk-ink: #f4d293; --front-desk-tint: #453723;
+  --policy-ink: #ddc3fa; --policy-tint: #3c3150;
+  --memory-ink: #efb3d3; --memory-tint: #473044;
+}
+[data-agent-role="coordinator"] { --agent-color: var(--coordinator-ink); --agent-tint: var(--coordinator-tint); }
+[data-agent-role="safety"] { --agent-color: var(--safety-ink); --agent-tint: var(--safety-tint); }
+[data-agent-role="scheduler"] { --agent-color: var(--scheduler-ink); --agent-tint: var(--scheduler-tint); }
+[data-agent-role="receptionist"] { --agent-color: var(--front-desk-ink); --agent-tint: var(--front-desk-tint); }
+[data-agent-role="policy"] { --agent-color: var(--policy-ink); --agent-tint: var(--policy-tint); }
+[data-agent-role="memory"] { --agent-color: var(--memory-ink); --agent-tint: var(--memory-tint); }

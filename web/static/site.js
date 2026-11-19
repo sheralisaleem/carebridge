@@ -11,6 +11,18 @@ const workflow = get('[data-workflow]');
 if (workflow) mountWorkflow(workflow, inspector);
 get('#logout-form')?.addEventListener('submit', clearActivity);
 
+if (document.body.dataset.page === '/clinic') {
+  const openPolicy = () => {
+    const target = document.getElementById(location.hash.slice(1));
+    if (target?.matches('#policies details')) {
+      target.open = true;
+      target.scrollIntoView({ block: 'start' });
+    }
+  };
+  openPolicy();
+  window.addEventListener('hashchange', openPolicy);
+}
+
 const directory = get('[data-directory]');
 if (directory) {
   const options = get('#department-filter');

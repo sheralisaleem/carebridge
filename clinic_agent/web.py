@@ -4,7 +4,11 @@ from __future__ import annotations
 import argparse
 import asyncio
 import contextlib
+import errno
+import socket
+import sys
 from dataclasses import replace
+from http.client import HTTPConnection, HTTPException
 from urllib.parse import urlencode, urlsplit
 
 from jinja2 import Environment, FileSystemLoader, select_autoescape
@@ -17,6 +21,7 @@ from starlette.staticfiles import StaticFiles
 from starlette.websockets import WebSocketDisconnect
 
 from .agent_catalog import agent_catalog, agent_overview
+from .mcp_catalog import mcp_catalog
 from .auth import Accounts, AuthError, SESSION_LIFETIME
 from .clinic_db import get_patient, set_fault
 from .clinic_tools import ClinicService
@@ -184,6 +189,8 @@ def create_app(settings=None, llm=None, mail=None):
         if request.url.path == "/simulation":
             return render(request, "simulation.html", "Simulation",
                           enabled=settings.simulation_enabled and user["role"] == "patient")
+        if request.url.path == "/mcp":
+            return render(request, "mcp.html", "MCP tools", tools=mcp_catalog())
         return render(request, "agents.html", "Agents", overview=await dashboard_overview(), catalog=agent_catalog())
 
     async def dashboard_overview():
@@ -288,12 +295,13 @@ def create_app(settings=None, llm=None, mail=None):
             Route("/account", account, methods=["GET", "POST"]),
             Route("/doctor/appointments", doctor_pages),
             Route("/doctor/availability", doctor_pages, methods=["GET", "POST"]),
-            *(Route(path, agent_pages) for path in ("/agents", "/knowledge", "/simulation")),
+            *(Route(path, agent_pages) for path in ("/agents", "/knowledge", "/simulation", "/mcp")),
             Route("/api/agents/overview", agents_overview_route),
             Route("/api/kb/search", kb_search),
             Route("/api/simulation", simulation, methods=["POST"]),
             *auth.routes(),
             WebSocketRoute("/ws", ws_endpoint),
+            Mount("/ui", StaticFiles(directory=WEB_DIR / "static"), name="ui"),
             Mount("/static", StaticFiles(directory=WEB_DIR / "static"), name="static"),
         ],
         lifespan=lifespan,
@@ -309,7 +317,10 @@ def create_app(settings=None, llm=None, mail=None):
             "img-src 'self' data:; base-uri 'none'; form-action 'self'; "
             f"connect-src 'self' {settings.site_origin.replace('http', 'ws', 1)}"
         )
-        if not request.url.path.startswith("/static/"):
+        if request.url.path.startswith(("/ui/", "/static/")):
+            if request.url.path.endswith((".js", ".css")):
+                response.headers["Cache-Control"] = "no-cache"
+        else:
             response.headers["Cache-Control"] = "no-store"
         if auth.secure:
             response.headers["Strict-Transport-Security"] = "max-age=31536000"
@@ -324,6 +335,18 @@ def datetime_string(visit):
     return visit["date"] + "T" + visit["start_time"]
 
 
+def already_serving_carebridge(host, port):
+    connection = HTTPConnection(host, port, timeout=2)
+    try:
+        connection.request("GET", "/")
+        response = connection.getresponse()
+        return response.status == 200 and b"<title>Book a clinic visit \xc2\xb7 CareBridge</title>" in response.read(8192)
+    except (OSError, HTTPException):
+        return False
+    finally:
+        connection.close()
+
+
 def main():
     import uvicorn
 
@@ -332,13 +355,41 @@ def main():
     parser.add_argument("--port", type=int, default=8000)
     parser.add_argument("--demo-doctor-signup", action="store_true")
     parser.add_argument("--no-browser", action="store_true", help="Accepted for compatibility")
+    parser.add_argument("--pause-if-running", action="store_true", help=argparse.SUPPRESS)
     args = parser.parse_args()
-    settings = get_settings()
-    if args.port != 8000 and settings.site_origin == "http://127.0.0.1:8000":
-        settings = replace(settings, site_origin=f"http://127.0.0.1:{args.port}")
-    if args.demo_doctor_signup:
-        settings = replace(settings, demo_doctor_signup=True)
-    uvicorn.run(create_app(settings), host=args.host, port=args.port, access_log=False)
+    if not 0 <= args.port <= 65535:
+        parser.error("--port must be between 0 and 65535")
+    family = socket.AF_INET6 if ":" in args.host else socket.AF_INET
+    browser_host = {"0.0.0.0": "127.0.0.1", "::": "::1"}.get(args.host, args.host)
+    url_host = f"[{browser_host}]" if ":" in browser_host else browser_host
+    try:
+        listener = socket.create_server((args.host, args.port), family=family, backlog=2048)
+    except OSError as exc:
+        if exc.errno not in {errno.EADDRINUSE, 10048}:
+            raise SystemExit(f"Could not listen on http://{url_host}:{args.port}: {exc}") from None
+        if already_serving_carebridge(browser_host, args.port):
+            print(f"http://{url_host}:{args.port}/", flush=True)
+            if args.pause_if_running and sys.stdin.isatty():
+                try:
+                    input("Press Enter to close this window.")
+                except (EOFError, KeyboardInterrupt):
+                    pass
+            return
+        raise SystemExit(f"Port {args.port} is in use. Run CareBridge with --port and a free port (for example, --port 8001).") from None
+
+    with listener:
+        port = listener.getsockname()[1]
+        settings = get_settings()
+        if port != 8000 and settings.site_origin == "http://127.0.0.1:8000":
+            settings = replace(settings, site_origin=f"http://127.0.0.1:{port}")
+        if args.demo_doctor_signup:
+            settings = replace(settings, demo_doctor_signup=True)
+        print(f"CareBridge URL: http://{url_host}:{port}/", flush=True)
+        config = uvicorn.Config(create_app(settings), host=args.host, port=port, access_log=False)
+        server = uvicorn.Server(config)
+        server.run(sockets=[listener])
+        if not server.started:
+            raise SystemExit(3)
 
 
 if __name__ == "__main__":
